@@ -1,3 +1,10 @@
+## 2026.9.0-geoplanetary.12
+
+### General
+- Enhance: Lightweight Context Filter 式の導入
+- Enhance: 投稿禁止ワードをLCF式で指定できるように
+- Enhance: センシティブワードをLCF式で指定できるように
+
 ## 2026.9.0-geoplanetary.11b
 
 ### General

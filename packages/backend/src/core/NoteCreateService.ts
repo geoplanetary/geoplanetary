@@ -54,7 +54,7 @@ import { UserBlockingService } from '@/core/UserBlockingService.js';
 import { isReply } from '@/misc/is-reply.js';
 import { trackPromise } from '@/misc/promise-tracker.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
-import { NoteProhibitService } from '@/core/NoteProhibitService.js';
+import { NoteModerationService } from '@/core/NoteModerationService.js';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { CacheService } from '@/core/CacheService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
@@ -275,7 +275,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private utilityService: UtilityService,
 		private userBlockingService: UserBlockingService,
 		private cacheService: CacheService,
-		private noteProhibitService: NoteProhibitService,
+		private noteModerationService: NoteModerationService,
 	) {
 		this.updateNotesCountQueue = new CollapsedQueue(process.env.NODE_ENV !== 'test' ? 60 * 1000 * 5 : 0, this.collapseNotesCount, this.performUpdateNotesCount);
 	}
@@ -484,19 +484,18 @@ export class NoteCreateService implements OnApplicationShutdown {
 		const policies = await this.roleService.getUserPolicies(user.id);
 
 		if (data.visibility === 'public' && data.channel == null) {
-			const sensitiveWords = this.meta.sensitiveWords;
-			if (this.utilityService.isKeyWordIncluded(data.cw ?? data.text ?? '', sensitiveWords)) {
+			if (this.noteModerationService.checkSensitiveWordsContain(data.cw ?? data.text ?? '')) {
 				data.visibility = 'home';
 			} else if (policies.canPublicNote === false) {
 				data.visibility = 'home';
 			}
 		}
 
-		const hasProhibitedWords = this.checkProhibitedWordsContain({
+		const hasProhibitedWords = this.noteModerationService.checkProhibitedWordsContain({
 			cw: data.cw,
 			text: data.text,
 			pollChoices: data.poll?.choices,
-		}, this.meta.prohibitedWords);
+		});
 
 		if (hasProhibitedWords) {
 			throw new IdentifiableError('689ee33f-f97c-479a-ac49-1b9f8140af99', 'Note contains prohibited words');
@@ -672,18 +671,48 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		const effectiveMentionCount = Math.max(mentionedUsers.length, data.apMentionRawCount ?? 0);
-		if (effectiveMentionCount > 0 && effectiveMentionCount > (await this.roleService.getUserPolicies(user.id)).mentionLimit) {
+		if (effectiveMentionCount > 0 && effectiveMentionCount > policies.mentionLimit) {
 			throw new IdentifiableError('9f466dab-c856-48cd-9e65-ff90ff750580', 'Note contains too many mentions');
 		}
 
-		if (await this.noteProhibitService.isProhibitedNote({
+		const roles = await this.roleService.getUserRoles(user.id);
+
+		if (data.visibility === 'public' && this.noteModerationService.evalSensitiveNoteExpr({
 			userId: user.id,
 			text: data.text,
 			reply: data.reply ?? null,
 			renote: data.renote ?? null,
 			mentions: mentionedUsers.map(v => { return { username: v.username, host: v.host }; }),
-			hashtags: tags,
+			tags: tags,
 			files: data.files ?? null,
+			roles,
+		})) {
+			data.visibility = 'home';
+		}
+
+		if (this.noteModerationService.evalProhibitedNoteExpr({
+			userId: user.id,
+			text: data.text,
+			reply: data.reply ?? null,
+			renote: data.renote ?? null,
+			mentions: mentionedUsers.map(v => { return { username: v.username, host: v.host }; }),
+			tags: tags,
+			files: data.files ?? null,
+			roles,
+		})) {
+			throw new NoteCreateService.MatchedProhibitedPatternsError();
+		}
+
+		// ![deplecated feature]: あとでけす
+		if (this.noteModerationService.isProhibitedNote({
+			userId: user.id,
+			text: data.text,
+			reply: data.reply ?? null,
+			renote: data.renote ?? null,
+			mentions: mentionedUsers.map(v => { return { username: v.username, host: v.host }; }),
+			tags: tags,
+			files: data.files ?? null,
+			roles,
 		})) {
 			throw new NoteCreateService.MatchedProhibitedPatternsError();
 		}

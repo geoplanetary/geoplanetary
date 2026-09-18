@@ -105,8 +105,9 @@ export class MiMeta {
 	})
 	public silencedHosts: string[];
 
+	// ![deplecated feature]: あとでけす
 	@Column('jsonb', {
-		default: { },
+		default: {},
 	})
 	public prohibitedNotePattern: ProhibitedNoteFormulaValue;
 

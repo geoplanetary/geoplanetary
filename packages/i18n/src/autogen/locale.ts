@@ -4465,7 +4465,7 @@ export interface Locale extends ILocale {
      */
     "sensitiveWordsDescription": string;
     /**
-     * スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。
+     * スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。$から始まる行はLCF式になります。
      */
     "sensitiveWordsDescription2": string;
     /**
@@ -4477,7 +4477,7 @@ export interface Locale extends ILocale {
      */
     "prohibitedWordsDescription": string;
     /**
-     * スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。
+     * スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。$から始まる行はLCF式になります。
      */
     "prohibitedWordsDescription2": string;
     /**
@@ -8694,6 +8694,10 @@ export interface Locale extends ILocale {
          * 許容する誤差
          */
         "allowDifference": string;
+        /**
+         * この機能は非推奨となりました。今後のリリースで削除される可能性があります。
+         */
+        "deplecatedWarning": string;
         "_condition": {
             /**
              * 偽
@@ -8820,6 +8824,16 @@ export interface Locale extends ILocale {
              */
             "hasHashtagMatchOf": string;
         };
+    };
+    "_lcfExpression": {
+        /**
+         * LCF式
+         */
+        "lcfExpression": string;
+        /**
+         * LCF式 入力コンテキスト
+         */
+        "inputContext": string;
     };
     "_sensitiveMediaDetection": {
         /**

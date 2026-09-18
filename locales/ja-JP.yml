@@ -1113,10 +1113,10 @@ rolesAssignedToMe: "自分に割り当てられたロール"
 resetPasswordConfirm: "パスワードリセットしますか？"
 sensitiveWords: "センシティブワード"
 sensitiveWordsDescription: "設定したワードが含まれるノートの公開範囲をホームにします。改行で区切って複数設定できます。"
-sensitiveWordsDescription2: "スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。"
+sensitiveWordsDescription2: "スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。$から始まる行はLCF式になります。"
 prohibitedWords: "禁止ワード"
 prohibitedWordsDescription: "設定したワードが含まれるノートを投稿しようとした際、エラーとなるようにします。改行で区切って複数設定できます。"
-prohibitedWordsDescription2: "スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。"
+prohibitedWordsDescription2: "スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。$から始まる行はLCF式になります。"
 hiddenTags: "非表示ハッシュタグ"
 hiddenTagsDescription: "設定したタグをトレンドに表示させないようにします。改行で区切って複数設定できます。"
 notesSearchNotAvailable: "ノート検索は利用できません。"
@@ -2254,6 +2254,7 @@ _prohibitedNote:
   disable: "無効"
   hash: "ハッシュ"
   allowDifference: "許容する誤差"
+  deplecatedWarning: "この機能は非推奨となりました。今後のリリースで削除される可能性があります。"
   _condition:
     false_value: "偽"
     true_value: "真"
@@ -2286,6 +2287,10 @@ _prohibitedNote:
     hashtagCountMoreThanOrEq: "ハッシュタグの個数が〜以上"
     hashtagCountLessThan: "ハッシュタグの個数が〜未満"
     hasHashtagMatchOf: "〜にマッチするハッシュタグを含む"
+
+_lcfExpression:
+  lcfExpression: "LCF式"
+  inputContext: "LCF式 入力コンテキスト"
 
 _sensitiveMediaDetection:
   description: "機械学習を使って自動でセンシティブなメディアを検出し、モデレーションに役立てることができます。サーバーの負荷が少し増えます。"
