@@ -5492,6 +5492,53 @@ export type components = {
             scheduledNoteLimit: number;
             watermarkAvailable: boolean;
         };
+        NoteFlagLite: {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            /** @example New Flag */
+            name: string;
+            description: string;
+            /** @example #000000 */
+            color: string | null;
+            /** @example https://example.com/ */
+            iconUrl: string | null;
+            /** @example false */
+            canAssignByUser: boolean;
+            /** @example 0 */
+            displayOrder: number;
+        };
+        NoteFlag: components['schemas']['NoteFlagLite'] & {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @example false */
+            isPublic: boolean;
+            /** @enum {string} */
+            target: 'manual' | 'conditional';
+            condFormula: string;
+            policies: components['schemas']['NotePolicyOverrides'];
+        };
+        NotePolicyOverrideBooleanValue: {
+            useDefault: boolean;
+            priority: boolean;
+            value: boolean;
+        } | {
+            useDefault: boolean;
+        };
+        NotePolicyOverrides: {
+            masked: components['schemas']['NotePolicyOverrideBooleanValue'];
+            enableReply: components['schemas']['NotePolicyOverrideBooleanValue'];
+            enableQuote: components['schemas']['NotePolicyOverrideBooleanValue'];
+        };
+        NotePolicies: {
+            masked?: boolean;
+            enableReply?: boolean;
+            enableQuote?: boolean;
+        };
         ReversiGameLite: {
             /** Format: id */
             id: string;

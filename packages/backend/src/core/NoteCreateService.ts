@@ -199,6 +199,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 	public static ReplyProhibitedUserError = class extends Error { };
 	public static DirectMessageProhibitedUserError = class extends Error { };
 	public static AttachFileProhibitedUserError = class extends Error { };
+	public static ProhibitedByNotePolicyError = class extends IdentifiableError {
+		constructor() { super('d43b2072-2952-4298-b893-4df1f03b8517', 'Rejected due to the policy of the referenced note.'); }
+	};
 	private updateNotesCountQueue: CollapsedQueue<MiNote['id'], number>;
 
 	constructor(
@@ -308,7 +311,6 @@ export class NoteCreateService implements OnApplicationShutdown {
 			id: In(data.visibleUserIds),
 		}) : [];
 
-		// TODO: コール回数多いAPIのためキャッシュする
 		const policies = (await this.roleService.getUserPolicies(user.id));
 		if (data.text && data.text.length > policies.noteLengthLimit) {
 			throw new IdentifiableError('8c148117-4d13-4ada-8cf3-4d6286a2bf03', 'Cannot post notes longer than your role limit.');
@@ -347,6 +349,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 			} else if (isRenote(renote) && !isQuote(renote)) {
 				throw new IdentifiableError('bde24c37-121f-4e7d-980d-cec52f599f02', 'Cannot renote pure renote');
 			}
+
+			const renotePolicies = await this.noteModerationService.getNotePolicies(data.renoteId);
+			if (!renotePolicies.enableQuote) throw new NoteCreateService.ProhibitedByNotePolicyError();
 
 			// Check blocking
 			if (renote.userId !== user.id) {
@@ -400,6 +405,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 			} else if (reply.visibility === 'specified' && data.visibility !== 'specified') {
 				throw new IdentifiableError('ced780a1-2012-4caf-bc7e-a95a291294cb', 'Cannot reply to specified note with different visibility');
 			}
+
+			const replyPolicies = await this.noteModerationService.getNotePolicies(data.replyId);
+			if (!replyPolicies.enableReply) throw new NoteCreateService.ProhibitedByNotePolicyError();
 
 			// Check blocking
 			if (reply.userId !== user.id) {

@@ -63,6 +63,13 @@ import {
 	packedRolePoliciesSchema,
 	packedRoleSchema,
 } from '@/models/json-schema/role.js';
+import {
+	packedNoteFlagLiteSchema,
+	packedNoteFlagSchema,
+	packedNotePolicyOverridesSchema,
+	packedNotePoliciesSchema,
+	packedNotePolicyOverrideBooleanValueSchema,
+} from '@/models/json-schema/note-flag.js';
 import { packedAdSchema } from '@/models/json-schema/ad.js';
 import { packedReversiGameDetailedSchema, packedReversiGameLiteSchema } from '@/models/json-schema/reversi-game.js';
 import {
@@ -165,6 +172,11 @@ export const refs = {
 	RoleLite: packedRoleLiteSchema,
 	Role: packedRoleSchema,
 	RolePolicies: packedRolePoliciesSchema,
+	NoteFlagLite: packedNoteFlagLiteSchema,
+	NoteFlag: packedNoteFlagSchema,
+	NotePolicyOverrideBooleanValue: packedNotePolicyOverrideBooleanValueSchema,
+	NotePolicyOverrides: packedNotePolicyOverridesSchema,
+	NotePolicies: packedNotePoliciesSchema,
 	ReversiGameLite: packedReversiGameLiteSchema,
 	ReversiGameDetailed: packedReversiGameDetailedSchema,
 	MetaLite: packedMetaLiteSchema,
