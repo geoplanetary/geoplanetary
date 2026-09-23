@@ -4522,6 +4522,9 @@ export type components = {
             clippedCount?: number;
             hasPoll?: boolean;
             myReaction?: string | null;
+            flagIds?: string[] | null;
+            flags?: components['schemas']['NoteFlagLite'][] | null;
+            policies: components['schemas']['NotePolicies'];
         };
         NoteDraft: {
             /**
@@ -5701,6 +5704,7 @@ export type components = {
             serverRules: string[];
             themeColor: string | null;
             policies: components['schemas']['RolePolicies'];
+            notePolicies: components['schemas']['NotePolicies'];
             /**
              * @default local
              * @enum {string}
@@ -9663,6 +9667,7 @@ export interface operations {
                         enableIdenticonGeneration: boolean;
                         manifestJsonOverride: string;
                         policies: Record<string, never>;
+                        notePolicies: components['schemas']['NotePolicies'];
                         enableFanoutTimeline: boolean;
                         enableFanoutTimelineDbFallback: boolean;
                         perLocalUserUserTimelineCacheMax: number;

@@ -19,6 +19,7 @@ import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
 import { CacheService } from '@/core/CacheService.js';
 import { RoleService } from '../RoleService.js';
+import { NoteModerationService } from '../NoteModerationService.js';
 import type { OnModuleInit } from '@nestjs/common';
 import type { CustomEmojiService } from '../CustomEmojiService.js';
 import type { ReactionService } from '../ReactionService.js';
@@ -70,6 +71,7 @@ export class NoteEntityService implements OnModuleInit {
 	private idService: IdService;
 	private cacheService: CacheService;
 	private roleService: RoleService;
+	private noteModerationService: NoteModerationService;
 	private noteLoader = new DebounceLoader(this.findNoteOrFail);
 
 	constructor(
@@ -118,6 +120,7 @@ export class NoteEntityService implements OnModuleInit {
 		this.idService = this.moduleRef.get('IdService');
 		this.cacheService = this.moduleRef.get('CacheService');
 		this.roleService = this.moduleRef.get('RoleService');
+		this.noteModerationService = this.moduleRef.get('NoteModerationService');
 	}
 
 	@bindThis
@@ -135,6 +138,10 @@ export class NoteEntityService implements OnModuleInit {
 	public async shouldHideNote(packedNote: Packed<'Note'>, meId: MiUser['id'] | null): Promise<boolean> {
 		if (meId === packedNote.userId) return false;
 		// TODO: isVisibleForMe を使うようにしても良さそう(型違うけど)
+
+		if (packedNote.policies?.masked && (!meId || await this.roleService.isModerator({ id: meId }))) {
+			return true;
+		}
 
 		const policies = await this.roleService.getUserPolicies(packedNote.userId);
 		if (policies.requireSigninToViewContents === 'force-enable' && meId == null) {
@@ -280,6 +287,13 @@ export class NoteEntityService implements OnModuleInit {
 
 	@bindThis
 	public async isVisibleForMe(note: MiNote, meId: MiUser['id'] | null): Promise<boolean> {
+		const imModerator = await this.roleService.isModerator(meId ? { id: meId } : null);
+		const notePolicies = await this.noteModerationService.getNotePolicies(note.id);
+
+		if (notePolicies.masked && !imModerator) {
+			return false;
+		}
+
 		// This code must always be synchronized with the checks in QueryService.generateVisibilityQuery.
 		// visibility が specified かつ自分が指定されていなかったら非表示
 		if (note.visibility === 'specified') {
@@ -400,6 +414,9 @@ export class NoteEntityService implements OnModuleInit {
 		const packedFiles = options?._hint_?.packedFiles;
 		const packedUsers = options?._hint_?.packedUsers;
 
+		const noteFlags = (await this.noteModerationService.getFlagsOfNote(note.id)).filter(v => v.isPublic);
+		const notePolicies = await this.noteModerationService.getNotePolicies(note.id);
+
 		const packed: Packed<'Note'> = await awaitAll({
 			id: note.id,
 			createdAt: this.idService.parse(note.id).date.toISOString(),
@@ -436,6 +453,19 @@ export class NoteEntityService implements OnModuleInit {
 			hasPoll: note.hasPoll || undefined,
 			uri: note.uri ?? undefined,
 			url: note.url ?? undefined,
+			flagIds: noteFlags.map(v => v.id),
+			flags: noteFlags.map(v => {
+				return {
+					id: v.id,
+					name: v.name,
+					description: v.description,
+					color: v.color,
+					iconUrl: v.iconUrl,
+					canAssignByUser: v.canAssignByUser,
+					displayOrder: v.displayOrder,
+				};
+			}),
+			policies: notePolicies,
 
 			...(opts.detail ? {
 				clippedCount: note.clippedCount,
