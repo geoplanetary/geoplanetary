@@ -263,6 +263,36 @@ type AdminInviteListResponse = operations['admin___invite___list']['responses'][
 type AdminMetaResponse = operations['admin___meta']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminNoteFlagsAssignRequest = operations['admin___note-flags___assign']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsCreateRequest = operations['admin___note-flags___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsCreateResponse = operations['admin___note-flags___create']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsDeleteRequest = operations['admin___note-flags___delete']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsListResponse = operations['admin___note-flags___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsShowRequest = operations['admin___note-flags___show']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsShowResponse = operations['admin___note-flags___show']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsUnassignRequest = operations['admin___note-flags___unassign']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsUpdateDefaultPoliciesRequest = operations['admin___note-flags___update-default-policies']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminNoteFlagsUpdateRequest = operations['admin___note-flags___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
 type AdminPromoCreateRequest = operations['admin___promo___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1610,6 +1640,16 @@ declare namespace entities {
         AdminInviteListRequest,
         AdminInviteListResponse,
         AdminMetaResponse,
+        AdminNoteFlagsAssignRequest,
+        AdminNoteFlagsCreateRequest,
+        AdminNoteFlagsCreateResponse,
+        AdminNoteFlagsDeleteRequest,
+        AdminNoteFlagsListResponse,
+        AdminNoteFlagsShowRequest,
+        AdminNoteFlagsShowResponse,
+        AdminNoteFlagsUnassignRequest,
+        AdminNoteFlagsUpdateRequest,
+        AdminNoteFlagsUpdateDefaultPoliciesRequest,
         AdminPromoCreateRequest,
         AdminQueueClearRequest,
         AdminQueueDeliverDelayedResponse,
@@ -2027,6 +2067,9 @@ declare namespace entities {
         MuteListResponse,
         MyAppsRequest,
         MyAppsResponse,
+        NoteFlagsCreateRequest,
+        NoteFlagsDeleteRequest,
+        NoteFlagsListResponse,
         NotesRequest,
         NotesResponse,
         NotesChildrenRequest,
@@ -2968,6 +3011,15 @@ type NoteFlag = components['schemas']['NoteFlag'];
 
 // @public (undocumented)
 type NoteFlagLite = components['schemas']['NoteFlagLite'];
+
+// @public (undocumented)
+type NoteFlagsCreateRequest = operations['note-flags___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NoteFlagsDeleteRequest = operations['note-flags___delete']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NoteFlagsListResponse = operations['note-flags___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type NotePolicies = components['schemas']['NotePolicies'];
