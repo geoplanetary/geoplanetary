@@ -4,6 +4,8 @@
 - Enhance: Lightweight Context Filter 式の導入
 - Enhance: 投稿禁止ワードをLCF式で指定できるように
 - Enhance: センシティブワードをLCF式で指定できるように
+- Enhance: ノートフラグ機能
+	- ユーザーロールの概念をノートに拡張したものです。この機能によってノート単位でのきめ細やかなモデレーションが可能になります。
 
 ### Server
 - Enance: ロールに対してキャッシュを適用  
