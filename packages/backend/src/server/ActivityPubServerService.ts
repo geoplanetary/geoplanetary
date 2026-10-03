@@ -31,6 +31,7 @@ import { IActivity } from '@/core/activitypub/type.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
 import * as Acct from '@/misc/acct.js';
 import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
+import { NoteModerationService } from '@/core/NoteModerationService.js';
 import type { FastifyInstance, FastifyRequest, FastifyReply, FastifyPluginOptions, FastifyBodyParser } from 'fastify';
 import type { FindOptionsWhere } from 'typeorm';
 
@@ -77,6 +78,7 @@ export class ActivityPubServerService {
 		private userKeypairService: UserKeypairService,
 		private queryService: QueryService,
 		private fanoutTimelineEndpointService: FanoutTimelineEndpointService,
+		private noteModerationService: NoteModerationService,
 	) {
 		//this.createServer = this.createServer.bind(this);
 	}
@@ -487,9 +489,11 @@ export class ActivityPubServerService {
 				useDbFallback: true,
 				ignoreAuthorFromMute: true,
 				excludePureRenotes: false,
-				noteFilter: (note) => {
+				noteFilter: async (note) => {
 					if (note.visibility !== 'home' && note.visibility !== 'public') return false;
 					if (note.localOnly) return false;
+					const policies = await this.noteModerationService.getNotePolicies(note.id);
+					if (policies.masked) return false;
 					return true;
 				},
 				dbFallback: async (untilId, sinceId, limit) => {
@@ -699,6 +703,12 @@ export class ActivityPubServerService {
 			});
 
 			if (note == null) {
+				reply.code(404);
+				return;
+			}
+
+			const policies = await this.noteModerationService.getNotePolicies(note.id);
+			if (policies.masked) {
 				reply.code(404);
 				return;
 			}

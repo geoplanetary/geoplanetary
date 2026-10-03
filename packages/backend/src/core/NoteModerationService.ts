@@ -22,7 +22,7 @@ import { ModerationLogService } from './ModerationLogService.js';
 import { RoleService } from './RoleService.js';
 import { UtilityService } from './UtilityService.js';
 
-type InspectionSubject = {
+export type InspectionSubject = {
 	userId: model.MiUser['id'];
 	text: string | null;
 	reply: model.MiNote | null;
@@ -31,6 +31,7 @@ type InspectionSubject = {
 	mentions: { username: string; host: string | null; }[];
 	tags: string[];
 	roles: model.MiRole[];
+	flags: model.MiNoteFlag[];
 };
 
 @Injectable()
@@ -416,8 +417,9 @@ export class NoteModerationService implements OnApplicationShutdown {
 				...subject,
 				reply: subject.reply ? { ...subject.reply } as LCFExpressionRecordType : null,
 				renote: subject.renote ? { ...subject.renote } as LCFExpressionRecordType : null,
-				files: subject.files ? subject.files.map(o => { return { ...o } as LCFExpressionRecordType; }) : null,
-				roles: subject.roles.map(o => { return { ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType; }),
+				files: subject.files ? subject.files.map(o => ({ ...o } as LCFExpressionRecordType)) : null,
+				roles: subject.roles.map(o => ({ ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType)),
+				flags: subject.flags.map(o => ({ ...o, updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType)),
 			})));
 		} catch (_err) {
 			return false;
