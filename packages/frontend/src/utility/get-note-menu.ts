@@ -8,10 +8,11 @@ import { url } from '@@/js/config.js';
 import { claimAchievement } from './achievements.js';
 import type { Ref, ShallowRef } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
-import { $i } from '@/i.js';
+import { $i, iAmModerator } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import * as os from '@/os.js';
+import { noteFlagsCache } from '@/cache.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { store } from '@/store.js';
@@ -461,6 +462,35 @@ export function getNoteMenu(props: {
 					action: () => togglePin(true),
 				});
 			}
+		}
+
+		if (appearNote.userId === $i.id || iAmModerator) {
+			menuItems.push({
+				type: 'parent',
+				icon: 'ti ti-flag',
+				text: i18n.ts.noteFlags,
+				children: async () => {
+					const flags = await noteFlagsCache.fetch();
+					const noteAssignedFlags = new Set(appearNote.flagIds);
+					const isAssigned = (id: string) => noteAssignedFlags.has(id);
+					const assign = async (flag: NonNullable<(typeof appearNote)['flags']>[number]) => {
+						await (appearNote.userId === $i?.id && flag.canAssignByUser && (!('isPublic' in flag) || flag.isPublic) ? os.apiWithDialog('note-flags/create', { flagId: flag.id, noteId: appearNote.id }) : os.apiWithDialog('admin/note-flags/assign', { flagId: flag.id, noteId: appearNote.id }));
+						appearNote.flagIds?.push(flag.id);
+						appearNote.flags?.push(flag);
+					};
+					const unassign = async (flag: NonNullable<(typeof appearNote)['flags']>[number]) => {
+						await (appearNote.userId === $i?.id && flag.canAssignByUser && (!('isPublic' in flag) || flag.isPublic) ? os.apiWithDialog('note-flags/delete', { flagId: flag.id, noteId: appearNote.id }) : os.apiWithDialog('admin/note-flags/unassign', { flagId: flag.id, noteId: appearNote.id }));
+						appearNote.flagIds = appearNote.flagIds?.filter(v => v !== flag.id);
+						appearNote.flags = appearNote.flags?.filter(v => v.id !== flag.id);
+					};
+
+					return flags.filter(f => 'target' in f ? f.target === 'manual' : f.canAssignByUser).map(f => ({
+						text: f.name,
+						icon: isAssigned(f.id) ? 'ti ti-flag-check' : 'ti ti-flag',
+						action: async () => await (!isAssigned(f.id) ? assign(f) : unassign(f)),
+					} satisfies MenuItem));
+				},
+			});
 		}
 
 		menuItems.push({

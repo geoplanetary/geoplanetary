@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:class="{
 				[$style.logGreen]: [
 					'createRole',
+					'createNoteFlag',
 					'addCustomEmoji',
 					'createGlobalAnnouncement',
 					'createUserAnnouncement',
@@ -28,6 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.logRed]: [
 					'suspend',
 					'deleteRole',
+					'deleteNoteFlag',
 					'deleteGlobalAnnouncement',
 					'deleteUserAnnouncement',
 					'deleteCustomEmoji',
@@ -54,6 +56,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else-if="log.type === 'createRole'">: {{ log.info.role.name }}</span>
 		<span v-else-if="log.type === 'updateRole'">: {{ log.info.before.name }}</span>
 		<span v-else-if="log.type === 'deleteRole'">: {{ log.info.role.name }}</span>
+		<span v-else-if="log.type === 'assignNoteFlag'">: @{{ log.info.noteUserId }}{{ log.info.noteUserHost ? '@' + log.info.noteUserHost : '' }} <i class="ti ti-arrow-right"></i> {{ log.info.flagName }}</span>
+		<span v-else-if="log.type === 'unassignNoteFlag'">: @{{ log.info.noteUserId }}{{ log.info.noteUserHost ? '@' + log.info.noteUserHost : '' }} <i class="ti ti-equal-not"></i> {{ log.info.flagName }}</span>
+		<span v-else-if="log.type === 'createNoteFlag'">: {{ log.info.flag.name }}</span>
+		<span v-else-if="log.type === 'updateNoteFlag'">: {{ log.info.before.name }}</span>
+		<span v-else-if="log.type === 'deleteNoteFlag'">: {{ log.info.flag.name }}</span>
 		<span v-else-if="log.type === 'addCustomEmoji'">: {{ log.info.emoji.name }}</span>
 		<span v-else-if="log.type === 'updateCustomEmoji'">: {{ log.info.before.name }}</span>
 		<span v-else-if="log.type === 'deleteCustomEmoji'">: {{ log.info.emoji.name }}</span>
@@ -96,6 +103,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<i v-else-if="log.type === 'createRole'" class="ti ti-plus"></i>
 		<i v-else-if="log.type === 'updateRole'" class="ti ti-pencil"></i>
 		<i v-else-if="log.type === 'deleteRole'" class="ti ti-trash"></i>
+		<i v-else-if="log.type === 'assignNoteFlag'" class="ti ti-flag-plus"></i>
+		<i v-else-if="log.type === 'unassignNoteFlag'" class="ti ti-flag-minus"></i>
+		<i v-else-if="log.type === 'createNoteFlag'" class="ti ti-plus"></i>
+		<i v-else-if="log.type === 'updateNoteFlag'" class="ti ti-pencil"></i>
+		<i v-else-if="log.type === 'deleteNoteFlag'" class="ti ti-trash"></i>
 		<i v-else-if="log.type === 'addCustomEmoji'" class="ti ti-plus"></i>
 		<i v-else-if="log.type === 'updateCustomEmoji'" class="ti ti-pencil"></i>
 		<i v-else-if="log.type === 'deleteCustomEmoji'" class="ti ti-trash"></i>

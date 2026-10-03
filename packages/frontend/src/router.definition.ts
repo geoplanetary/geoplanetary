@@ -448,6 +448,22 @@ export const ROUTE_DEF = [{
 		name: 'roles',
 		component: page(() => import('@/pages/admin/roles.vue')),
 	}, {
+		path: '/note-flag/new',
+		name: 'note-flag',
+		component: page(() => import('@/pages/admin/note-flags.edit.page.vue')),
+	}, {
+		path: '/note-flag/:id/edit',
+		name: 'note-flag',
+		component: page(() => import('@/pages/admin/note-flags.edit.page.vue')),
+	}, {
+		path: '/note-flag/:id',
+		name: 'note-flag',
+		component: page(() => import('@/pages/admin/note-flags.flag.page.vue')),
+	}, {
+		path: '/note-flags',
+		name: 'note-flags',
+		component: page(() => import('@/pages/admin/note-flags.page.vue')),
+	}, {
 		path: '/database',
 		name: 'database',
 		component: page(() => import('@/pages/admin/database.vue')),
