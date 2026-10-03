@@ -86,7 +86,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (note == null) {
 				throw new ApiError(meta.errors.noSuchNote);
 			}
-			if (note.id !== me.id) {
+			if (note.userId !== me.id) {
 				throw new ApiError(meta.errors.accessDenied);
 			}
 

@@ -139,7 +139,8 @@ export class NoteEntityService implements OnModuleInit {
 		if (meId === packedNote.userId) return false;
 		// TODO: isVisibleForMe を使うようにしても良さそう(型違うけど)
 
-		if (packedNote.policies?.masked && (!meId || await this.roleService.isModerator({ id: meId }))) {
+		const imMod = meId && await this.roleService.isModerator({ id: meId });
+		if (packedNote.policies?.masked && !imMod) {
 			return true;
 		}
 
@@ -384,6 +385,7 @@ export class NoteEntityService implements OnModuleInit {
 		}, options);
 
 		const meId = me ? me.id : null;
+		const imMod = await this.roleService.isModerator(me ?? null);
 		const note = typeof src === 'object' ? src : await this.noteLoader.load(src);
 		const host = note.userHost;
 
@@ -414,7 +416,7 @@ export class NoteEntityService implements OnModuleInit {
 		const packedFiles = options?._hint_?.packedFiles;
 		const packedUsers = options?._hint_?.packedUsers;
 
-		const noteFlags = (await this.noteModerationService.getFlagsOfNote(note.id)).filter(v => v.isPublic);
+		const noteFlags = (await this.noteModerationService.getFlagsOfNote(note.id)).filter(v => imMod || v.isPublic);
 		const notePolicies = await this.noteModerationService.getNotePolicies(note.id);
 
 		const packed: Packed<'Note'> = await awaitAll({
@@ -461,6 +463,7 @@ export class NoteEntityService implements OnModuleInit {
 					description: v.description,
 					color: v.color,
 					iconUrl: v.iconUrl,
+					asBadge: v.asBadge,
 					canAssignByUser: v.canAssignByUser,
 					displayOrder: v.displayOrder,
 				};

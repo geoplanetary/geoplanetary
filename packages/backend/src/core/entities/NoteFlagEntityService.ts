@@ -43,11 +43,12 @@ export class NoteFlagEntityService {
 			description: flag.description,
 			color: flag.color,
 			iconUrl: flag.iconUrl,
-			target: flag.target,
-			condFormula: flag.condFormula,
 			isPublic: flag.isPublic,
+			asBadge: flag.asBadge,
 			canAssignByUser: flag.canAssignByUser,
 			displayOrder: flag.displayOrder,
+			target: flag.target,
+			condFormula: flag.condFormula,
 			policies: policies,
 		} as PackedNoteFlag);
 	}

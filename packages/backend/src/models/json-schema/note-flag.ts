@@ -25,34 +25,21 @@ export const packedNotePoliciesSchema = {
 export type PackedNotePolicies = SchemaType<typeof packedNotePoliciesSchema>;
 
 export const packedNotePolicyOverrideBooleanValueSchema = {
-	oneOf: [
-		{
-			type: 'object',
-			properties: {
-				useDefault: {
-					type: 'boolean',
-					nullable: false, optional: false,
-				},
-				priority: {
-					type: 'boolean',
-					nullable: false, optional: false,
-				},
-				value: {
-					type: 'boolean',
-					nullable: false, optional: false,
-				},
-			},
+	type: 'object',
+	properties: {
+		useDefault: {
+			type: 'boolean',
+			nullable: false, optional: false,
 		},
-		{
-			type: 'object',
-			properties: {
-				useDefault: {
-					type: 'boolean',
-					nullable: false, optional: false,
-				},
-			},
+		priority: {
+			type: 'number',
+			nullable: false, optional: true,
 		},
-	],
+		value: {
+			type: 'boolean',
+			nullable: false, optional: true,
+		},
+	},
 } as const;
 
 export const packedNotePolicyOverridesSchema = {
@@ -101,6 +88,11 @@ export const packedNoteFlagLiteSchema = {
 			type: 'string',
 			optional: false, nullable: true,
 			example: 'https://example.com/',
+		},
+		asBadge: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			example: false,
 		},
 		canAssignByUser: {
 			type: 'boolean',

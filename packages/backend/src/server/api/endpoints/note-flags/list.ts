@@ -45,6 +45,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					description: v.description,
 					color: v.color,
 					iconUrl: v.iconUrl,
+					asBadge: v.asBadge,
 					canAssignByUser: v.canAssignByUser,
 					displayOrder: v.displayOrder,
 				};

@@ -5608,6 +5608,8 @@ export type components = {
             /** @example https://example.com/ */
             iconUrl: string | null;
             /** @example false */
+            asBadge: boolean;
+            /** @example false */
             canAssignByUser: boolean;
             /** @example 0 */
             displayOrder: number;
@@ -5626,10 +5628,8 @@ export type components = {
         };
         NotePolicyOverrideBooleanValue: {
             useDefault: boolean;
-            priority: boolean;
-            value: boolean;
-        } | {
-            useDefault: boolean;
+            priority?: number;
+            value?: boolean;
         };
         NotePolicyOverrides: {
             masked: components['schemas']['NotePolicyOverrideBooleanValue'];
@@ -9951,6 +9951,7 @@ export interface operations {
                     color: string | null;
                     iconUrl: string | null;
                     isPublic: boolean;
+                    asBadge: boolean;
                     canAssignByUser: boolean;
                     displayOrder: number;
                     /** @enum {string} */
@@ -10280,6 +10281,7 @@ export interface operations {
                     color?: string | null;
                     iconUrl?: string | null;
                     isPublic?: boolean;
+                    asBadge?: boolean;
                     canAssignByUser?: boolean;
                     displayOrder?: number;
                     /** @enum {string} */
