@@ -3,53 +3,55 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { decode } from 'blurhash';
 import { LCFAST, LCFExpression, LCFExpressionRecordType, LCFExpressionValueType, LCFPredicateDefinitionList, defaultPredicateLib } from '@geoplanetary/lcf-expression';
 import Redis from 'ioredis';
-import { MiNote } from '@/models/Note.js';
-import { MiDriveFile } from '@/models/DriveFile.js';
-import { bindThis } from '@/decorators.js';
-import type { ProhibitedNoteFormulaValue } from '@/models/ProhibitedNoteFormula.js';
-import { MiUser } from '@/models/User.js';
 import { FILE_TYPE_BROWSERSAFE } from '@/const.js';
-import { MiRole } from '@/models/Role.js';
+import { bindThis } from '@/decorators.js';
 import { DI } from '@/di-symbols.js';
-import { MiMeta } from '@/models/Meta.js';
+import * as model from '@/models/_.js';
+import { DEFAULT_POLICIES, MiNotePolicies, NotePolicyOverrideValue } from '@/models/NoteFlag.js';
+import type { ProhibitedNoteFormulaValue } from '@/models/ProhibitedNoteFormula.js';
+import { IdentifiableError } from '@/misc/identifiable-error.js';
+import { MemoryKVCache, MemorySingleCache, RedisKVCache } from '@/misc/cache.js';
+import { CacheService } from './CacheService.js';
+import { GlobalEvents, GlobalEventService } from './GlobalEventService.js';
+import { IdService } from './IdService.js';
+import { ModerationLogService } from './ModerationLogService.js';
+import { RoleService } from './RoleService.js';
 import { UtilityService } from './UtilityService.js';
-import { GlobalEvents } from './GlobalEventService.js';
 
-type InspectionSubject = {
-	userId: MiUser['id'];
+export type InspectionSubject = {
+	userId: model.MiUser['id'];
 	text: string | null;
-	reply: MiNote | null;
-	renote: MiNote | null;
-	files: MiDriveFile[] | null;
+	reply: model.MiNote | null;
+	renote: model.MiNote | null;
+	files: model.MiDriveFile[] | null;
 	mentions: { username: string; host: string | null; }[];
 	tags: string[];
-	roles: MiRole[];
+	roles: model.MiRole[];
+	flags: model.MiNoteFlag[];
 };
 
 @Injectable()
-export class NoteModerationService {
+export class NoteModerationService implements OnApplicationShutdown {
+	public static readonly FlagAlreadyAssignedError = class extends IdentifiableError {
+		constructor(message?: string) { super('1860b6ea-a966-4224-a46c-0127447c200a', message ?? 'Flag is already assigned to note.'); }
+	};
+	public static readonly FlagNotAssignedError = class extends IdentifiableError {
+		constructor(message?: string) { super('996635a6-899c-489a-ae9b-cccd87397f61', message ?? 'Flag is not assigned to note yet.'); }
+	};
+
+	private noteUserCache: MemoryKVCache<model.MiNote['userId']>;
+	private noteFlagsCache: MemorySingleCache<model.MiNoteFlag[]>;
+	private noteFlagAssignmentsByNoteCache: RedisKVCache<model.MiNoteFlagAssignment[]>;
+	private noteFlagIdsCache: MemoryKVCache<{ manual: Set<model.MiNoteFlag['id']>, conditional: Set<model.MiNoteFlag['id']> }>;
+	private cacheMayExpireUsers: MemoryKVCache<true>;
 	private prohibitedWords: string[];
 	private prohibitedNoteExpr: LCFAST[];
 	private sensitiveWords: string[];
 	private sensitiveNoteExpr: LCFAST[];
-
-	constructor(
-		@Inject(DI.redisForSub)
-		private redisForSub: Redis.Redis,
-
-		@Inject(DI.meta)
-		private meta: MiMeta,
-
-		private utilityService: UtilityService,
-	) {
-		this.updateProhibitedWords();
-		this.updateSensitiveWords();
-		this.redisForSub.on('message', this.onMessage);
-	}
 
 	static readonly lcfPredicates: LCFPredicateDefinitionList = {
 		...defaultPredicateLib,
@@ -94,38 +96,301 @@ export class NoteModerationService {
 		},
 	};
 
-	@bindThis
-	private async onMessage(_host: string, data: string): Promise<void> {
-		const obj = JSON.parse(data) as { [K in keyof GlobalEvents]: { channel: GlobalEvents[K]['name'], message: GlobalEvents[K]['payload'] } }[keyof GlobalEvents];
-		if (obj.channel === 'internal' && obj.message.type === 'metaUpdated') {
-			const { body } = obj.message;
-			this.updateProhibitedWords(body.after.prohibitedWords);
-			this.updateSensitiveWords(body.after.sensitiveWords);
-		}
-	};
+	constructor(
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
 
-	@bindThis
-	private updateProhibitedWords(value: string[] = this.meta.prohibitedWords) {
-		this.prohibitedWords = value.filter(i => !i.startsWith('$'));
-		this.prohibitedNoteExpr = value.filter(i => i.startsWith('$')).map(i => {
-			try {
-				return LCFExpression.parse(i.substring(1));
-			} catch (_) {
-				return undefined;
-			}
-		}).filter(i => i !== undefined);
+		@Inject(DI.redisForSub)
+		private redisForSub: Redis.Redis,
+
+		@Inject(DI.meta)
+		private meta: model.MiMeta,
+
+		@Inject(DI.notesRepository)
+		private notesRepository: model.NotesRepository,
+
+		@Inject(DI.noteFlagsRepository)
+		private noteFlagsRepository: model.NoteFlagsRepository,
+
+		@Inject(DI.noteFlagAssignmentsRepository)
+		private noteFlagAssignmentsRepository: model.NoteFlagAssignmentsRepository,
+
+		private idService: IdService,
+		private cacheService: CacheService,
+		private globalEventService: GlobalEventService,
+		private moderationLogService: ModerationLogService,
+		private roleService: RoleService,
+		private utilityService: UtilityService,
+	) {
+		// todo. キャッシュのライフタイム、設定に書き起こしてもよさそう？
+		this.noteUserCache = new MemoryKVCache<model.MiNote['userId']>(1000 * 60); // 1min
+		this.noteFlagsCache = new MemorySingleCache<model.MiNoteFlag[]>(1000 * 60 * 60); // 1hour
+		this.noteFlagAssignmentsByNoteCache = new RedisKVCache<model.MiNoteFlagAssignment[]>(this.redisClient, 'noteFlagAssignments', {
+			lifetime: 1000 * 60 * 10, // 10min
+			memoryCacheLifetime: 1000 * 30, // 30sec
+			fetcher: (key) => this.noteFlagAssignmentsRepository.findBy({ noteId: key }),
+			toRedisConverter: (value) => JSON.stringify(value),
+			fromRedisConverter: (value) => JSON.parse(value),
+		});
+		this.noteFlagIdsCache = new MemoryKVCache<{ manual: Set<model.MiNoteFlag['id']>, conditional: Set<model.MiNoteFlag['id']> }>(1000 * 60); // 1min
+		this.cacheMayExpireUsers = new MemoryKVCache<true>(1000 * 60); // = noteFlagIdsCache.constructor.lifetime
+
+		this.updateProhibitedWords();
+		this.updateSensitiveWords();
+		this.redisForSub.on('message', this.onMessage);
 	}
 
 	@bindThis
-	private updateSensitiveWords(value: string[] = this.meta.sensitiveWords) {
-		this.sensitiveWords = value.filter(i => !i.startsWith('$'));
-		this.sensitiveNoteExpr = value.filter(i => i.startsWith('$')).map(i => {
-			try {
-				return LCFExpression.parse(i.substring(1));
-			} catch (_) {
-				return undefined;
+	private async onMessage(_host: string, data: string): Promise<void> {
+		const obj = JSON.parse(data) as { [K in keyof GlobalEvents]: { channel: GlobalEvents[K]['name'], message: GlobalEvents[K]['payload'] } }[keyof GlobalEvents];
+		if (obj.channel === 'internal') {
+			const { type, body } = obj.message;
+			switch (type) {
+				case 'metaUpdated': {
+					this.updateProhibitedWords(body.after.prohibitedWords);
+					this.updateSensitiveWords(body.after.sensitiveWords);
+					break;
+				}
+				case 'noteFlagCreated': {
+					const cache = this.noteFlagsCache.get();
+					if (cache) {
+						cache.push({
+							...body,
+							updatedAt: new Date(body.updatedAt),
+						});
+					}
+					break;
+				}
+				case 'noteFlagUpdated': {
+					const cache = this.noteFlagsCache.get();
+					const i = cache?.findIndex(v => v.id === body.id);
+					if (cache && i && i >= 0) {
+						cache[i] = {
+							...body,
+							updatedAt: new Date(body.updatedAt),
+						};
+					}
+					break;
+				}
+				case 'noteFlagDeleted': {
+					const cache = this.noteFlagsCache.get();
+					if (cache) {
+						this.noteFlagsCache.set(cache.filter(v => v.id !== body.id));
+					}
+					break;
+				}
+				case 'noteFlagAssigned':
+				case 'noteFlagUnassigned': {
+					this.noteFlagAssignmentsByNoteCache.delete(body.noteId);
+					this.noteFlagIdsCache.delete(body.noteId);
+					break;
+				}
+				case 'userRoleAssigned':
+				case 'userRoleUnassigned':
+				case 'updateUserProfile': {
+					this.cacheMayExpireUsers.set(body.userId, true);
+					break;
+				}
+				default: break;
 			}
-		}).filter(i => i !== undefined);
+		}
+	};
+
+	/**
+	 * すべてのノートフラグを取得する。
+	 */
+	@bindThis
+	public async getAllFlags() {
+		return await this.noteFlagsCache.fetch(() => this.noteFlagsRepository.findBy({}));
+	}
+
+	/**
+	 * ノートに関連付けられたフラグを取得する。
+	 * @param noteId 取得対象のノートID
+	 */
+	@bindThis
+	public async getFlagsOfNote(noteId: model.MiNote['id']) {
+		const flags = await this.getAllFlags();
+		const poster = await this.noteUserCache.fetch(noteId, async () => (await this.notesRepository.findOneByOrFail({ id: noteId })).userId);
+		const expire = this.cacheMayExpireUsers.get(poster);
+		if (expire) {
+			this.noteFlagIdsCache.delete(poster);
+		}
+		const idset = await this.noteFlagIdsCache.fetch(noteId, async () => {
+			const assigned = new Set((await this.noteFlagAssignmentsByNoteCache.fetch(noteId)).map(v => v.flagId));
+			const note = await this.notesRepository.findOneByOrFail({ id: noteId });
+			const user = await this.cacheService.findUserById(note.userId);
+			const roles = await this.roleService.getUserRoles(note.userId);
+			const conditionalFlags = flags.filter(flags => flags.target === 'conditional' && flags.condFormula);
+			if (conditionalFlags.length > 0) {
+				const compiler = new LCFExpression({ predicateDefs: NoteModerationService.lcfPredicates, throwOnTypeError: false });
+				const matched = new Set(conditionalFlags.filter(flag => {
+					try {
+						return compiler.compile(compiler.parse(flag.condFormula))({
+							...note,
+							user: { ...user, roles: roles.map(o => { return { ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType; }) },
+							flags: [...assigned.values()],
+						} as LCFExpressionRecordType);
+					} catch (_) { return false; }
+				}).map(flag => flag.id));
+				return { manual: assigned, conditional: matched };
+			} else {
+				return { manual: assigned, conditional: new Set() };
+			}
+		});
+		return flags.filter(flag => (flag.target === 'manual' && idset.manual.has(flag.id)) || (flag.target === 'conditional' && idset.conditional.has(flag.id)));
+	}
+
+	/**
+	 * ノートに適用されるポリシーを取得する。
+	 * @param noteId 取得対象のノートID
+	 */
+	public async getNotePolicies(noteId: model.MiNote['id']): Promise<MiNotePolicies> {
+		const defaultPolicies = { ...DEFAULT_POLICIES, ...this.meta.notePolicies };
+		const flags = await this.getFlagsOfNote(noteId);
+
+		function aggregatePolicy<P extends keyof MiNotePolicies>(key: P, mergePred: (values: NotePolicyOverrideValue<P>[]) => MiNotePolicies[P]) {
+			const policyMod = flags.map(flag => flag.policies[key]).filter((p): p is NotePolicyOverrideValue<P> => p && p.useDefault === false);
+			if (policyMod.length <= 0) return defaultPolicies[key];
+			const priority = Math.max(...policyMod.map(v => v.priority));
+			return mergePred(policyMod.filter(v => v.priority === priority));
+		}
+
+		return {
+			masked: aggregatePolicy('masked', v => v.every(i => i.value)),
+			enableReply: aggregatePolicy('enableReply', v => v.some(i => i.value)),
+			enableQuote: aggregatePolicy('enableQuote', v => v.some(i => i.value)),
+		};
+	}
+
+	/**
+	 * 新しいフラグを作成する。
+	 * @param e 作成するフラグの内容
+	 * @param moderator 操作を実行するユーザー
+	 * @returns 作成されたフラグ
+	 */
+	@bindThis
+	public async createFlag(e: Partial<model.MiNoteFlag>, moderator?: model.MiUser) {
+		const date = new Date();
+		const created = await this.noteFlagsRepository.insertOne({
+			...e,
+			id: this.idService.gen(date.getTime()),
+			updatedAt: date,
+		});
+
+		this.globalEventService.publishInternalEvent('noteFlagCreated', created);
+		if (moderator) {
+			await this.moderationLogService.log(moderator, 'createNoteFlag', {
+				flagId: created.id,
+				flag: created,
+			});
+		}
+		return created;
+	}
+
+	/**
+	 * フラグを削除する。
+	 * @param target 削除するフラグ
+	 * @param moderator 操作を実行するユーザー
+	 */
+	@bindThis
+	public async deleteFlag(target: model.MiNoteFlag, moderator?: model.MiUser) {
+		await this.noteFlagsRepository.delete({ id: target.id });
+
+		this.globalEventService.publishInternalEvent('noteFlagDeleted', target);
+		if (moderator) {
+			await this.moderationLogService.log(moderator, 'deleteNoteFlag', {
+				flagId: target.id,
+				flag: target,
+			});
+		}
+	}
+
+	/**
+	 * フラグの内容を更新する。
+	 * @param target 更新するフラグ
+	 * @param e フラグの更新内容
+	 * @param moderator 操作を実行するユーザー
+	 */
+	@bindThis
+	public async updateFlag(target: model.MiNoteFlag, e: Partial<model.MiNoteFlag>, moderator?: model.MiUser) {
+		const date = new Date();
+		await this.noteFlagsRepository.update(target.id, {
+			...e,
+			id: undefined,
+			updatedAt: date,
+		});
+
+		const updated = await this.noteFlagsRepository.findOneByOrFail({ id: target.id });
+		this.globalEventService.publishInternalEvent('noteFlagUpdated', updated);
+		if (moderator) {
+			await this.moderationLogService.log(moderator, 'updateNoteFlag', {
+				flagId: target.id,
+				before: target,
+				after: updated,
+			});
+		}
+	}
+
+	/**
+	 * ノートにフラグを付与する。
+	 * @param targetId 対象のノートのID
+	 * @param flagId 付与するフラグのID
+	 * @param moderator 操作を実行するユーザー
+	 */
+	@bindThis
+	public async assignFlagToNote(targetId: model.MiNote['id'], flagId: model.MiNoteFlag['id'], moderator?: model.MiUser) {
+		const now = Date.now();
+		const flag = await this.noteFlagsRepository.findOneByOrFail({ id: flagId });
+		const note = await this.notesRepository.findOneByOrFail({ id: targetId });
+		const existing = await this.noteFlagAssignmentsRepository.findOneBy({ flagId: flagId, noteId: targetId });
+		if (existing) {
+			throw new NoteModerationService.FlagAlreadyAssignedError();
+		}
+		const created = await this.noteFlagAssignmentsRepository.insertOne({
+			id: this.idService.gen(now),
+			flagId: flagId,
+			noteId: targetId,
+		});
+		this.globalEventService.publishInternalEvent('noteFlagAssigned', created);
+		if (moderator) {
+			this.moderationLogService.log(moderator, 'assignNoteFlag', {
+				flagId: flagId,
+				flagName: flag.name,
+				noteId: targetId,
+				note: note,
+				noteUserId: note.userId,
+				noteUserHost: note.userHost,
+			});
+		}
+	}
+
+	/**
+	 * ノートからフラグを剥奪する。
+	 * @param targetId 対象のノートのID
+	 * @param flagId 剥奪するフラグのID
+	 * @param moderator 操作を実行するユーザー
+	 */
+	@bindThis
+	public async unassignFlagToNote(targetId: model.MiNote['id'], flagId: model.MiNoteFlag['id'], moderator?: model.MiUser) {
+		const flag = await this.noteFlagsRepository.findOneByOrFail({ id: flagId });
+		const note = await this.notesRepository.findOneByOrFail({ id: targetId });
+		const existing = await this.noteFlagAssignmentsRepository.findOneBy({ flagId: flagId, noteId: targetId });
+		if (!existing) {
+			throw new NoteModerationService.FlagNotAssignedError();
+		}
+		await this.noteFlagAssignmentsRepository.delete(existing.id);
+		this.globalEventService.publishInternalEvent('noteFlagUnassigned', existing);
+		if (moderator) {
+			this.moderationLogService.log(moderator, 'unassignNoteFlag', {
+				flagId: flagId,
+				flagName: flag.name,
+				noteId: targetId,
+				note: note,
+				noteUserId: note.userId,
+				noteUserHost: note.userHost,
+			});
+		}
 	}
 
 	@bindThis
@@ -152,8 +417,9 @@ export class NoteModerationService {
 				...subject,
 				reply: subject.reply ? { ...subject.reply } as LCFExpressionRecordType : null,
 				renote: subject.renote ? { ...subject.renote } as LCFExpressionRecordType : null,
-				files: subject.files ? subject.files.map(o => { return { ...o } as LCFExpressionRecordType; }) : null,
-				roles: subject.roles.map(o => { return { ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType; }),
+				files: subject.files ? subject.files.map(o => ({ ...o } as LCFExpressionRecordType)) : null,
+				roles: subject.roles.map(o => ({ ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType)),
+				flags: subject.flags.map(o => ({ ...o, updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType)),
 			})));
 		} catch (_err) {
 			return false;
@@ -282,5 +548,40 @@ export class NoteModerationService {
 			// TODO: log error
 			return false;
 		}
+	}
+
+	@bindThis
+	private updateProhibitedWords(value: string[] = this.meta.prohibitedWords) {
+		this.prohibitedWords = value.filter(i => !i.startsWith('$'));
+		this.prohibitedNoteExpr = value.filter(i => i.startsWith('$')).map(i => {
+			try {
+				return LCFExpression.parse(i.substring(1));
+			} catch (_) {
+				return undefined;
+			}
+		}).filter(i => i !== undefined);
+	}
+
+	@bindThis
+	private updateSensitiveWords(value: string[] = this.meta.sensitiveWords) {
+		this.sensitiveWords = value.filter(i => !i.startsWith('$'));
+		this.sensitiveNoteExpr = value.filter(i => i.startsWith('$')).map(i => {
+			try {
+				return LCFExpression.parse(i.substring(1));
+			} catch (_) {
+				return undefined;
+			}
+		}).filter(i => i !== undefined);
+	}
+
+	@bindThis
+	public dispose(): void {
+		this.redisForSub.off('message', this.onMessage);
+		this.noteFlagAssignmentsByNoteCache.dispose();
+	}
+
+	@bindThis
+	public onApplicationShutdown(_signal?: string | undefined): void {
+		this.dispose();
 	}
 }

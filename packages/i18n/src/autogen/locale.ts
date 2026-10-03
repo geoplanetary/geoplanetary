@@ -8669,6 +8669,143 @@ export interface Locale extends ILocale {
             "not": string;
         };
     };
+    /**
+     * ノートフラグ
+     */
+    "noteFlags": string;
+    "_noteFlag": {
+        /**
+         * フラグ
+         */
+        "flag": string;
+        /**
+         * フラグ
+         */
+        "flags": string;
+        /**
+         * フラグの作成
+         */
+        "new": string;
+        /**
+         * フラグの編集
+         */
+        "edit": string;
+        /**
+         * フラグ名
+         */
+        "name": string;
+        /**
+         * フラグの説明
+         */
+        "description": string;
+        /**
+         * アサイン
+         */
+        "assignTarget": string;
+        /**
+         * マニュアルはフラグを付与するノートを手動で管理します。
+         * コンディショナルは条件を設定し、それに合致するノートが自動で含まれるようになります。
+         */
+        "descriptionOfAssignTarget": string;
+        /**
+         * マニュアル
+         */
+        "manual": string;
+        /**
+         * マニュアルフラグ
+         */
+        "manualFlags": string;
+        /**
+         * コンディショナル
+         */
+        "conditional": string;
+        /**
+         * コンディショナルフラグ
+         */
+        "conditionalFlags": string;
+        /**
+         * 条件LCF式
+         */
+        "condition": string;
+        /**
+         * 公開フラグ
+         */
+        "isPublic": string;
+        /**
+         * バッジとして表示
+         */
+        "asBadge": string;
+        /**
+         * ノートにこのフラグがバッジとして表示されます。
+         */
+        "descriptionOfAsBadge": string;
+        /**
+         * オプション
+         */
+        "options": string;
+        /**
+         * ノートポリシー
+         */
+        "policies": string;
+        /**
+         * ベースポリシー
+         */
+        "basePolicy": string;
+        /**
+         * 既定値を使用
+         */
+        "useBaseValue": string;
+        /**
+         * アサインするフラグを選択
+         */
+        "chooseRoleToAssign": string;
+        /**
+         * アイコン画像のURL
+         */
+        "iconUrl": string;
+        /**
+         * 表示順
+         */
+        "displayOrder": string;
+        /**
+         * 優先度
+         */
+        "priority": string;
+        /**
+         * 数値が大きいほどUI上で先頭に表示されます。
+         */
+        "descriptionOfDisplayOrder": string;
+        /**
+         * ユーザーによるフラグ付けを許可
+         */
+        "canAssignToOwnNoteByUser": string;
+        /**
+         * オンにすると、ユーザーが自身のノートにこのフラグをつけることができるようになります。
+         */
+        "descriptionOfCanAssignToOwnNoteByUser": string;
+        /**
+         * ハッシュ
+         */
+        "hash": string;
+        /**
+         * 許容する誤差
+         */
+        "allowDifference": string;
+        "_policies": {
+            /**
+             * ノートを投稿者とモデレーター以外から見えなくする
+             */
+            "masked": string;
+            /**
+             * ノートへの返信を許可する
+             */
+            "enableReply": string;
+            /**
+             * ノートへの引用/Renoteを許可する
+             */
+            "enableQuote": string;
+        };
+    };
     "_prohibitedNote": {
         /**
          * 投稿禁止ノートのパターン
@@ -11938,6 +12075,26 @@ export interface Locale extends ILocale {
          * ロールのアサイン解除
          */
         "unassignRole": string;
+        /**
+         * フラグを作成
+         */
+        "createNoteFlag": string;
+        /**
+         * フラグを削除
+         */
+        "deleteNoteFlag": string;
+        /**
+         * フラグを更新
+         */
+        "updateNoteFlag": string;
+        /**
+         * フラグへアサイン
+         */
+        "assignNoteFlag": string;
+        /**
+         * フラグのアサイン解除
+         */
+        "unassignNoteFlag": string;
         /**
          * 凍結
          */

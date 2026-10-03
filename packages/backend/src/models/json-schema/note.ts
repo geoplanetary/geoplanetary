@@ -265,5 +265,26 @@ export const packedNoteSchema = {
 			type: 'string',
 			optional: true, nullable: true,
 		},
+		flagIds: {
+			type: 'array',
+			optional: true, nullable: true,
+			items: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+		},
+		flags: {
+			type: 'array',
+			optional: true, nullable: true,
+			items: {
+				type: 'object',
+				optional: false, nullable: false,
+				ref: 'NoteFlagLite',
+			},
+		},
+		policies: {
+			type: 'object',
+			ref: 'NotePolicies',
+		},
 	},
 } as const;

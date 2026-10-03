@@ -43,7 +43,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps">
 							<MkTextarea v-model="preservedUsernames">
-								<template #caption>{{ i18n.ts.preservedUsernamesDescription }}<br/><b>{{ i18n.ts.preservedUsernamesWarning }}</b></template>
+								<template #caption>
+									<div>{{ i18n.ts.preservedUsernamesDescription }}</div>
+									<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts.preservedUsernamesWarning }}</div>
+								</template>
 							</MkTextarea>
 							<MkButton primary @click="save_preservedUsernames">{{ i18n.ts.save }}</MkButton>
 						</div>
@@ -282,7 +285,7 @@ function save_preservedUsernames() {
 	});
 }
 
-function parse_usernameEntropyTable(): { result: 'ok', value } | { result: 'err', error } {
+function parse_usernameEntropyTable(): { result: 'ok', value: any } | { result: 'err', error: unknown } {
 	try {
 		return { result: 'ok', value: usernameEntropyTable.value !== '' ? JSON.parse(usernameEntropyTable.value) : null };
 	} catch (err) {

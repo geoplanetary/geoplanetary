@@ -144,6 +144,12 @@ export const meta = {
 			code: 'CONTAINS_TOO_MANY_MENTIONS',
 			id: '4de0363a-3046-481b-9b0f-feff3e211025',
 		},
+
+		restrictedByNotePolicy: {
+			message: 'This feature is restricted by note policy.',
+			code: 'RESTRICTED_BY_NOTE_POLICY',
+			id: 'e99e92d7-bed2-5033-aed2-252a2469c2f3', // UUIDv5: 'ns:api.geoplanetary.net/errors/RESTRICTED_BY_NOTE_POLICY'
+		},
 	},
 } as const;
 
@@ -151,9 +157,11 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		visibility: { type: 'string', enum: ['public', 'home', 'followers', 'specified'], default: 'public' },
-		visibleUserIds: { type: 'array', uniqueItems: true, items: {
-			type: 'string', format: 'misskey:id',
-		} },
+		visibleUserIds: {
+			type: 'array', uniqueItems: true, items: {
+				type: 'string', format: 'misskey:id',
+			},
+		},
 		cw: { type: 'string', nullable: true, minLength: 1, maxLength: 100 },
 		localOnly: { type: 'boolean', default: false },
 		reactionAcceptance: { type: 'string', nullable: true, enum: [null, 'likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'], default: null },
@@ -323,6 +331,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 				if (err instanceof NoteCreateService.DirectMessageProhibitedUserError) {
 					throw new ApiError(meta.errors.restrictedByRole);
+				}
+				if (err instanceof NoteCreateService.ProhibitedByNotePolicyError) {
+					throw new ApiError(meta.errors.restrictedByNotePolicy);
 				}
 				throw err;
 			}

@@ -54,6 +54,7 @@ import { UserBlockingService } from '@/core/UserBlockingService.js';
 import { isReply } from '@/misc/is-reply.js';
 import { trackPromise } from '@/misc/promise-tracker.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
+import type { InspectionSubject } from '@/core/NoteModerationService.js';
 import { NoteModerationService } from '@/core/NoteModerationService.js';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { CacheService } from '@/core/CacheService.js';
@@ -199,6 +200,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 	public static ReplyProhibitedUserError = class extends Error { };
 	public static DirectMessageProhibitedUserError = class extends Error { };
 	public static AttachFileProhibitedUserError = class extends Error { };
+	public static ProhibitedByNotePolicyError = class extends IdentifiableError {
+		public static readonly id = 'd43b2072-2952-4298-b893-4df1f03b8517';
+		constructor() { super(NoteCreateService.ProhibitedByNotePolicyError.id, 'Rejected due to the policy of the referenced note.'); }
+	};
 	private updateNotesCountQueue: CollapsedQueue<MiNote['id'], number>;
 
 	constructor(
@@ -308,7 +313,6 @@ export class NoteCreateService implements OnApplicationShutdown {
 			id: In(data.visibleUserIds),
 		}) : [];
 
-		// TODO: コール回数多いAPIのためキャッシュする
 		const policies = (await this.roleService.getUserPolicies(user.id));
 		if (data.text && data.text.length > policies.noteLengthLimit) {
 			throw new IdentifiableError('8c148117-4d13-4ada-8cf3-4d6286a2bf03', 'Cannot post notes longer than your role limit.');
@@ -347,6 +351,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 			} else if (isRenote(renote) && !isQuote(renote)) {
 				throw new IdentifiableError('bde24c37-121f-4e7d-980d-cec52f599f02', 'Cannot renote pure renote');
 			}
+
+			const renotePolicies = await this.noteModerationService.getNotePolicies(data.renoteId);
+			if (!renotePolicies.enableQuote) throw new NoteCreateService.ProhibitedByNotePolicyError();
 
 			// Check blocking
 			if (renote.userId !== user.id) {
@@ -401,8 +408,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 				throw new IdentifiableError('ced780a1-2012-4caf-bc7e-a95a291294cb', 'Cannot reply to specified note with different visibility');
 			}
 
+			const replyPolicies = await this.noteModerationService.getNotePolicies(data.replyId);
+
 			// Check blocking
 			if (reply.userId !== user.id) {
+				if (!replyPolicies.enableReply) throw new NoteCreateService.ProhibitedByNotePolicyError();
 				const blockExist = await this.blockingsRepository.exists({
 					where: {
 						blockerId: reply.userId,
@@ -676,8 +686,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		const roles = await this.roleService.getUserRoles(user.id);
-
-		if (data.visibility === 'public' && this.noteModerationService.evalSensitiveNoteExpr({
+		const moderationSubject: InspectionSubject = {
 			userId: user.id,
 			text: data.text,
 			reply: data.reply ?? null,
@@ -686,34 +695,19 @@ export class NoteCreateService implements OnApplicationShutdown {
 			tags: tags,
 			files: data.files ?? null,
 			roles,
-		})) {
+			flags: [],
+		};
+
+		if (data.visibility === 'public' && this.noteModerationService.evalSensitiveNoteExpr(moderationSubject)) {
 			data.visibility = 'home';
 		}
 
-		if (this.noteModerationService.evalProhibitedNoteExpr({
-			userId: user.id,
-			text: data.text,
-			reply: data.reply ?? null,
-			renote: data.renote ?? null,
-			mentions: mentionedUsers.map(v => { return { username: v.username, host: v.host }; }),
-			tags: tags,
-			files: data.files ?? null,
-			roles,
-		})) {
+		if (this.noteModerationService.evalProhibitedNoteExpr(moderationSubject)) {
 			throw new NoteCreateService.MatchedProhibitedPatternsError();
 		}
 
 		// ![deplecated feature]: あとでけす
-		if (this.noteModerationService.isProhibitedNote({
-			userId: user.id,
-			text: data.text,
-			reply: data.reply ?? null,
-			renote: data.renote ?? null,
-			mentions: mentionedUsers.map(v => { return { username: v.username, host: v.host }; }),
-			tags: tags,
-			files: data.files ?? null,
-			roles,
-		})) {
+		if (this.noteModerationService.isProhibitedNote(moderationSubject)) {
 			throw new NoteCreateService.MatchedProhibitedPatternsError();
 		}
 
@@ -837,6 +831,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 		host: MiUser['host'];
 		isBot: MiUser['isBot'];
 	}, data: Option, silent: boolean, tags: string[], mentionedUsers: MinimumUser[]) {
+		const policies = await this.noteModerationService.getNotePolicies(note.id);
+
 		this.notesChart.update(note, true);
 		if (note.visibility !== 'specified' && (this.meta.enableChartsForRemoteUser || (user.host == null))) {
 			this.perUserNotesChart.update(user, note, true);
@@ -919,7 +915,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			});
 		}
 
-		if (!silent) {
+		if (!silent && !policies.masked) {
 			if (this.userEntityService.isLocalUser(user)) this.activeUsersChart.write(user);
 
 			// Pack the note
