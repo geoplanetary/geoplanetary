@@ -10258,6 +10258,14 @@ export interface Locale extends ILocale {
          */
         "read:admin:roles": string;
         /**
+         * フラグを操作する
+         */
+        "write:admin:note-flags": string;
+        /**
+         * フラグを見る
+         */
+        "read:admin:note-flags": string;
+        /**
          * リレーを操作する
          */
         "write:admin:relays": string;

@@ -340,6 +340,7 @@ function save_hiddenTags() {
 
 function save_prohibitedNotePattern() {
 	os.apiWithDialog('admin/update-meta', {
+		// @ts-expect-error Misskey API のパラメータ定義を十分に行うことができない
 		prohibitedNotePattern: prohibitedNotePattern.value,
 	}).then(() => {
 		fetchInstance(true);

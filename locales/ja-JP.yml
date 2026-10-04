@@ -2693,6 +2693,8 @@ _permissions:
   "write:admin:user-note": "モデレーションノートを操作する"
   "write:admin:roles": "ロールを操作する"
   "read:admin:roles": "ロールを見る"
+  "write:admin:note-flags": "フラグを操作する"
+  "read:admin:note-flags": "フラグを見る"
   "write:admin:relays": "リレーを操作する"
   "read:admin:relays": "リレーを見る"
   "write:admin:invite-codes": "招待コードを操作する"
