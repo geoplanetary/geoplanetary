@@ -207,6 +207,18 @@ export class NoteModerationService implements OnApplicationShutdown {
 	}
 
 	/**
+	 * 指定したユーザー(省略した場合は通常のローカルユーザー)がアサイン可能なノートフラグを取得する。
+	 */
+	@bindThis
+	public async getAssignableFlags(userId?: model.MiUser['id']) {
+		const [iAmMod, flags] = await Promise.all([
+			(async () => userId ? await this.roleService.isModerator({ id: userId }) : false)(),
+			this.getAllFlags(),
+		]);
+		return flags.filter(f => f.target === 'manual' && (iAmMod || f.isPublic && f.canAssignByUser));
+	}
+
+	/**
 	 * ノートに関連付けられたフラグを取得する。
 	 * @param noteId 取得対象のノートID
 	 */

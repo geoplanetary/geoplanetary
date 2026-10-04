@@ -4670,6 +4670,7 @@ export type components = {
             localOnly: boolean;
             /** @enum {string|null} */
             reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
+            flagIds: string[];
             scheduledAt: number | null;
             isActuallyScheduled: boolean;
         };
@@ -30606,6 +30607,7 @@ export interface operations {
                         expiresAt?: number | null;
                         expiredAfter?: number | null;
                     } | null;
+                    flagIds?: string[];
                 };
             };
         };
@@ -30840,6 +30842,7 @@ export interface operations {
                         expiresAt?: number | null;
                         expiredAfter?: number | null;
                     } | null;
+                    flagIds?: string[];
                     scheduledAt?: number | null;
                     /** @default false */
                     isActuallyScheduled?: boolean;
@@ -31078,6 +31081,7 @@ export interface operations {
                         expiresAt?: number | null;
                         expiredAfter?: number | null;
                     } | null;
+                    flagIds?: string[];
                     scheduledAt?: number | null;
                     isActuallyScheduled?: boolean;
                 };

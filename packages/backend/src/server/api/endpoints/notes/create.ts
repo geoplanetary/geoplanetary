@@ -211,6 +211,11 @@ export const paramDef = {
 			},
 			required: ['choices'],
 		},
+		flagIds: {
+			type: 'array',
+			uniqueItems: true,
+			items: { type: 'string', format: 'misskey:id' },
+		},
 	},
 	// (re)note with text, files and poll are optional
 	if: {
@@ -268,6 +273,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					visibility: ps.visibility,
 					visibleUserIds: ps.visibleUserIds ?? [],
 					channelId: ps.channelId ?? null,
+					flagIds: ps.flagIds ?? [],
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,

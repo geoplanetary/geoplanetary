@@ -13,7 +13,7 @@ import { extractCustomEmojisFromMfm } from '@/misc/extract-custom-emojis-from-mf
 import { extractHashtags } from '@/misc/extract-hashtags.js';
 import type { IMentionedRemoteUsers } from '@/models/Note.js';
 import { MiNote } from '@/models/Note.js';
-import type { BlockingsRepository, ChannelFollowingsRepository, ChannelsRepository, DriveFilesRepository, FollowingsRepository, InstancesRepository, MiFollowing, MiMeta, MutingsRepository, NotesRepository, NoteThreadMutingsRepository, UserListMembershipsRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
+import type { BlockingsRepository, ChannelFollowingsRepository, ChannelsRepository, DriveFilesRepository, FollowingsRepository, InstancesRepository, MiFollowing, MiMeta, MiNoteFlag, MutingsRepository, NotesRepository, NoteThreadMutingsRepository, UserListMembershipsRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiApp } from '@/models/App.js';
 import { concat } from '@/misc/prelude/array.js';
@@ -183,6 +183,7 @@ type Option = {
 	visibility?: string;
 	visibleUsers?: MinimumUser[] | null;
 	channel?: MiChannel | null;
+	flags?: MiNoteFlag[] | null;
 	apMentions?: MinimumUser[] | null;
 	apMentionRawCount?: number | null;
 	apHashtags?: string[] | null;
@@ -318,6 +319,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		visibleUserIds: MiUser['id'][];
 		channelId: MiChannel['id'] | null;
 		localOnly: boolean;
+		flagIds: MiNoteFlag['id'][];
 		reactionAcceptance: MiNote['reactionAcceptance'];
 		poll: IPoll | null;
 		apMentions?: MinimumUser[] | null;
@@ -457,6 +459,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 			}
 		}
 
+		// 投稿予約されたノートに対するユーザビリティ確保のため、存在しないフラグIDが見つかった場合はエラーとせず単に無視する
+		const assignableFlags = (await this.noteModerationService.getAssignableFlags(user.id));
+		const requestedFlags = new Set(data.flagIds);
+		const flags = assignableFlags.filter(v => requestedFlags.has(v.id));
+
 		return this.create(user, {
 			createdAt: data.createdAt,
 			files: files,
@@ -470,6 +477,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			visibility: data.visibility,
 			visibleUsers,
 			channel,
+			flags,
 			apMentions: data.apMentions,
 			apHashtags: data.apHashtags,
 			apEmojis: data.apEmojis,
@@ -727,6 +735,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		const note = await this.insertNote(user, data, tags, emojis, mentionedUsers);
+		for (const flag of data.flags ?? []) {
+			await this.noteModerationService.assignFlagToNote(note.id, flag.id);
+		}
 
 		setImmediate('post created', { signal: this.#shutdownController.signal }).then(
 			() => this.postNoteCreated(note, user, data, silent, tags!, mentionedUsers!),
