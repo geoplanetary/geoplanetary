@@ -315,25 +315,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw new ApiError(meta.errors.cannotCreateAlreadyExpiredPoll);
 					} else if (err.id === 'bfa3905b-25f5-4894-b430-da331a490e4b') {
 						throw new ApiError(meta.errors.noSuchChannel);
+					} else if (err.errorIs(NoteCreateService.MatchedProhibitedPatternsError)) {
+						throw new ApiError(meta.errors.matchedProhibitedPatterns);
+					} else if (err.errorIs(NoteCreateService.AttachFileProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.QuoteProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.ReplyProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.DirectMessageProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.ProhibitedByNotePolicyError)) {
+						throw new ApiError(meta.errors.restrictedByNotePolicy);
 					}
-				}
-				if (err instanceof NoteCreateService.MatchedProhibitedPatternsError) {
-					throw new ApiError(meta.errors.matchedProhibitedPatterns);
-				}
-				if (err instanceof NoteCreateService.AttachFileProhibitedUserError) {
-					throw new ApiError(meta.errors.restrictedByRole);
-				}
-				if (err instanceof NoteCreateService.QuoteProhibitedUserError) {
-					throw new ApiError(meta.errors.restrictedByRole);
-				}
-				if (err instanceof NoteCreateService.ReplyProhibitedUserError) {
-					throw new ApiError(meta.errors.restrictedByRole);
-				}
-				if (err instanceof NoteCreateService.DirectMessageProhibitedUserError) {
-					throw new ApiError(meta.errors.restrictedByRole);
-				}
-				if (err instanceof NoteCreateService.ProhibitedByNotePolicyError) {
-					throw new ApiError(meta.errors.restrictedByNotePolicy);
 				}
 				throw err;
 			}

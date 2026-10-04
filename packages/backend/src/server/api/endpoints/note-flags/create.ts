@@ -9,6 +9,7 @@ import type { NoteFlagsRepository, NotesRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { NoteModerationService } from '@/core/NoteModerationService.js';
+import { IdentifiableError } from '@/misc/identifiable-error.js';
 
 export const meta = {
 	tags: ['notes', 'note-flag'],
@@ -93,11 +94,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			try {
 				await this.noteModerationService.assignFlagToNote(note.id, flag.id);
 			} catch (err) {
-				if (err instanceof NoteModerationService.FlagAlreadyAssignedError) {
-					throw new ApiError(meta.errors.alreadyAssigned);
-				} else {
-					throw err;
+				if (err instanceof IdentifiableError) {
+					if (err.errorIs(NoteModerationService.FlagAlreadyAssignedError)) throw new ApiError(meta.errors.alreadyAssigned);
 				}
+				throw err;
 			}
 		});
 	}

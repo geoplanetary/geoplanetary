@@ -37,10 +37,12 @@ export type InspectionSubject = {
 @Injectable()
 export class NoteModerationService implements OnApplicationShutdown {
 	public static readonly FlagAlreadyAssignedError = class extends IdentifiableError {
-		constructor(message?: string) { super('1860b6ea-a966-4224-a46c-0127447c200a', message ?? 'Flag is already assigned to note.'); }
+		public static readonly id = '1860b6ea-a966-4224-a46c-0127447c200a';
+		constructor(message?: string) { super(NoteModerationService.FlagAlreadyAssignedError.id, message ?? 'Flag is already assigned to note.'); }
 	};
 	public static readonly FlagNotAssignedError = class extends IdentifiableError {
-		constructor(message?: string) { super('996635a6-899c-489a-ae9b-cccd87397f61', message ?? 'Flag is not assigned to note yet.'); }
+		public static readonly id = '996635a6-899c-489a-ae9b-cccd87397f61';
+		constructor(message?: string) { super(NoteModerationService.FlagNotAssignedError.id, message ?? 'Flag is not assigned to note yet.'); }
 	};
 
 	private noteUserCache: MemoryKVCache<model.MiNote['userId']>;

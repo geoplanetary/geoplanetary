@@ -195,11 +195,26 @@ type Option = {
 @Injectable()
 export class NoteCreateService implements OnApplicationShutdown {
 	#shutdownController = new AbortController();
-	public static MatchedProhibitedPatternsError = class extends Error { };
-	public static QuoteProhibitedUserError = class extends Error { };
-	public static ReplyProhibitedUserError = class extends Error { };
-	public static DirectMessageProhibitedUserError = class extends Error { };
-	public static AttachFileProhibitedUserError = class extends Error { };
+	public static MatchedProhibitedPatternsError = class extends IdentifiableError {
+		public static readonly id = '93eb0d79-53a4-45bf-8e41-9d53c6241904';
+		constructor() { super(NoteCreateService.MatchedProhibitedPatternsError.id, 'Cannot post because matches a pattern of prohibited posts.'); }
+	};
+	public static QuoteProhibitedUserError = class extends IdentifiableError {
+		public static readonly id = 'ca0e1d97-8653-4941-840e-46e01f20d2e2';
+		constructor() { super(NoteCreateService.QuoteProhibitedUserError.id, 'User can\'t send quote/renote due to the policy.'); }
+	};
+	public static ReplyProhibitedUserError = class extends IdentifiableError {
+		public static readonly id = '0111bcfb-ad1b-4193-845c-f31921a27bcb';
+		constructor() { super(NoteCreateService.ReplyProhibitedUserError.id, 'User can\'t send reply due to the policy.'); }
+	};
+	public static DirectMessageProhibitedUserError = class extends IdentifiableError {
+		public static readonly id = '4178aee4-d918-4bd5-8121-b29339f305d0';
+		constructor() { super(NoteCreateService.DirectMessageProhibitedUserError.id, 'User can\'t send user-specified note due to the policy.'); }
+	};
+	public static AttachFileProhibitedUserError = class extends IdentifiableError {
+		public static readonly id = '01fb0ffe-57a0-4791-a6c9-32ee3895cb74';
+		constructor() { super(NoteCreateService.AttachFileProhibitedUserError.id, 'User can\'t attach file due to the policy.'); }
+	};
 	public static ProhibitedByNotePolicyError = class extends IdentifiableError {
 		public static readonly id = 'd43b2072-2952-4298-b893-4df1f03b8517';
 		constructor() { super(NoteCreateService.ProhibitedByNotePolicyError.id, 'Rejected due to the policy of the referenced note.'); }
