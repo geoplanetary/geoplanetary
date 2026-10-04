@@ -44,6 +44,7 @@ import { prefer } from '@/preferences.js';
 import { globalEvents } from '@/events.js';
 import { checkDragDataType, getDragData, setDragData } from '@/drag-and-drop.js';
 import { selectDriveFolder } from '@/utility/drive.js';
+import { $i } from '@/i';
 
 const props = withDefaults(defineProps<{
 	folder: Misskey.entities.DriveFolder;
@@ -65,6 +66,8 @@ const emit = defineEmits<{
 const hover = ref(false);
 const draghover = ref(false);
 const isDragging = ref(false);
+
+const isDriveWritable = ref<boolean>(!$i || ($i.isAdmin ?? false) || $i.policies.driveWritable);
 
 const title = computed(() => props.folder.name);
 
@@ -289,20 +292,23 @@ function onContextmenu(ev: PointerEvent) {
 				closed: () => dispose(),
 			});
 		},
-	}, { type: 'divider' }, {
-		text: i18n.ts.rename,
-		icon: 'ti ti-forms',
-		action: rename,
-	}, {
-		text: i18n.ts.move,
-		icon: 'ti ti ti-folder-symlink',
-		action: move,
-	}, { type: 'divider' }, {
-		text: i18n.ts.delete,
-		icon: 'ti ti-trash',
-		danger: true,
-		action: deleteFolder,
 	}];
+	if (isDriveWritable.value) {
+		menu = menu.concat([{ type: 'divider' }, {
+			text: i18n.ts.rename,
+			icon: 'ti ti-forms',
+			action: rename,
+		}, {
+			text: i18n.ts.move,
+			icon: 'ti ti ti-folder-symlink',
+			action: move,
+		}, { type: 'divider' }, {
+			text: i18n.ts.delete,
+			icon: 'ti ti-trash',
+			danger: true,
+			action: deleteFolder,
+		}]);
+	}
 	if (prefer.s.devMode) {
 		menu = menu.concat([{ type: 'divider' }, {
 			icon: 'ti ti-hash',

@@ -48,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkA>
 			</div>
 			<button class="_button" :class="$style.menu" @click="showMenu"><i class="ti ti-dots"></i></button>
-			<MkFollowButton v-if="$i && user.id != $i.id" v-model:user="user" :class="$style.follow" mini/>
+			<MkFollowButton v-if="$i && isFollowEnabled(user)" v-model:user="user" :class="$style.follow" mini/>
 		</div>
 		<div v-else>
 			<MkLoading/>
@@ -70,6 +70,7 @@ import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/utility/isFfVisibleForMe.js';
+import { isFollowEnabled } from '@/utility/is-follow-enabled.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
 
 const props = defineProps<{

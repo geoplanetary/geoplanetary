@@ -14,6 +14,7 @@ import type {
 	ReversiGameDetailed,
 	SystemWebhook,
 	ChatRoom,
+	NoteFlag,
 } from './autogen/models.js';
 
 export const notificationTypes = [
@@ -106,6 +107,8 @@ export const permissions = [
 	'write:admin:user-note',
 	'write:admin:roles',
 	'read:admin:roles',
+	'write:admin:note-flags',
+	'read:admin:note-flags',
 	'write:admin:relays',
 	'read:admin:relays',
 	'write:admin:invite-codes',
@@ -149,6 +152,11 @@ export const moderationLogTypes = [
 	'createRole',
 	'updateRole',
 	'deleteRole',
+	'assignNoteFlag',
+	'unassignNoteFlag',
+	'createNoteFlag',
+	'updateNoteFlag',
+	'deleteNoteFlag',
 	'clearQueue',
 	'promoteQueue',
 	'deleteDriveFile',
@@ -195,7 +203,14 @@ export const moderationLogTypes = [
 export const rolePolicies = [
 	'gtlAvailable',
 	'ltlAvailable',
+	'canPostNote',
+	'noteLengthLimit',
 	'canPublicNote',
+	'canFederateNote',
+	'canAttachFiles',
+	'canReply',
+	'canQuote',
+	'canDirectMessage',
 	'mentionLimit',
 	'canInvite',
 	'inviteLimit',
@@ -208,6 +223,7 @@ export const rolePolicies = [
 	'canUseTranslator',
 	'canHideAds',
 	'canCreateChannel',
+	'driveWritable',
 	'driveCapacityMb',
 	'maxFileSizeMb',
 	'alwaysMarkNsfw',
@@ -216,12 +232,17 @@ export const rolePolicies = [
 	'antennaLimit',
 	'wordMuteLimit',
 	'webhookLimit',
+	'clipAvailable',
 	'clipLimit',
 	'noteEachClipsLimit',
+	'userListAvailable',
 	'userListLimit',
 	'userEachUserListsLimit',
 	'rateLimitFactor',
 	'avatarDecorationLimit',
+	'canFollowing',
+	'canFollowedFromOthers',
+	'requireSigninToViewContents',
 	'canImportAntennas',
 	'canImportBlocking',
 	'canImportFollowing',
@@ -337,6 +358,35 @@ export type ModerationLogPayloads = {
 	deleteRole: {
 		roleId: string;
 		role: Role;
+	};
+	assignNoteFlag: {
+		noteId: string;
+		noteUserId: string;
+		noteUserHost: string | null;
+		note: Note;
+		flagId: string;
+		flagName: string;
+	};
+	unassignNoteFlag: {
+		noteId: string;
+		noteUserId: string;
+		noteUserHost: string | null;
+		note: Note;
+		flagId: string;
+		flagName: string;
+	};
+	createNoteFlag: {
+		flagId: string;
+		flag: NoteFlag;
+	};
+	updateNoteFlag: {
+		flagId: string;
+		before: NoteFlag;
+		after: NoteFlag;
+	};
+	deleteNoteFlag: {
+		flagId: string;
+		flag: NoteFlag;
 	};
 	clearQueue: Record<string, never>;
 	promoteQueue: Record<string, never>;

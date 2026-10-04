@@ -417,6 +417,10 @@ export const packedUserDetailedNotMeOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: true,
 		},
+		canFollowedFromOthers: {
+			type: 'boolean',
+			nullable: false, optional: true,
+		},
 		isBlocking: {
 			type: 'boolean',
 			nullable: false, optional: true,

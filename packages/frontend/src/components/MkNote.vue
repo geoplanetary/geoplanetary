@@ -63,7 +63,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					/>
 					<MkCwButton v-model="showContent" :text="appearNote.text" :renote="appearNote.renote" :files="appearNote.files" :poll="appearNote.poll" style="margin: 4px 0;"/>
 				</p>
-				<div v-show="appearNote.cw == null || showContent" :class="[{ [$style.contentCollapsed]: collapsed }]">
+				<div v-show="appearNote.cw == null || showContent" :class="[{ [$style.contentCollapsed]: collapsed }, {[$style.notecontentOverflow]: prefer.s.overflowLongNotes}]">
 					<div :class="$style.text">
 						<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
 						<MkA v-if="appearNote.replyId" :class="$style.replyIcon" :to="`/notes/${appearNote.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
@@ -103,13 +103,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkUrlPreview v-for="url in urls" :key="url" :url="url" :compact="true" :detail="false" :class="$style.urlPreview"/>
 					</div>
 					<div v-if="appearNote.renoteId" :class="$style.quote"><MkNoteSimple :note="appearNote?.renote ?? null" :class="$style.quoteNote"/></div>
-					<button v-if="isLong && collapsed" :class="$style.collapsed" class="_button" @click="collapsed = false">
-						<span :class="$style.collapsedLabel">{{ i18n.ts.showMore }}</span>
-					</button>
-					<button v-else-if="isLong && !collapsed" :class="$style.showLess" class="_button" @click="collapsed = true">
-						<span :class="$style.showLessLabel">{{ i18n.ts.showLess }}</span>
-					</button>
 				</div>
+				<button v-if="isLong && collapsed" :class="$style.collapsed" class="_button" @click="collapsed = false">
+					<span :class="$style.collapsedLabel">{{ i18n.ts.showMore }}</span>
+				</button>
+				<button v-else-if="isLong && !collapsed" :class="$style.showLess" class="_button" @click="collapsed = true">
+					<span :class="$style.showLessLabel">{{ i18n.ts.showLess }}</span>
+				</button>
 				<MkA v-if="appearNote.channel && !inChannel" :class="$style.channel" :to="`/channels/${appearNote.channel.id}`"><i class="ti ti-device-tv"></i> {{ appearNote.channel.name }}</MkA>
 			</div>
 			<MkReactionsViewer
@@ -127,9 +127,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</template>
 			</MkReactionsViewer>
 			<footer :class="$style.footer">
-				<button :class="$style.footerButton" class="_button" @click="reply()">
+				<button v-if="canReply" :class="$style.footerButton" class="_button" @click="reply()">
 					<i class="ti ti-arrow-back-up"></i>
 					<p v-if="appearNote.repliesCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.repliesCount) }}</p>
+				</button>
+				<button v-else :class="$style.footerButton" class="_button" disabled>
+					<i class="ti ti-ban"></i>
 				</button>
 				<button
 					v-if="canRenote"
@@ -151,7 +154,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<i v-else class="ti ti-plus"></i>
 					<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && $appearNote.reactionCount > 0" :class="$style.footerButtonCount">{{ number($appearNote.reactionCount) }}</p>
 				</button>
-				<button v-if="prefer.s.showClipButtonInNoteFooter" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown.prevent="clip()">
+				<button v-if="prefer.s.showClipButtonInNoteFooter && canClip" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown.prevent="clip()">
 					<i class="ti ti-paperclip"></i>
 				</button>
 				<button ref="menuButton" :class="$style.footerButton" class="_button" @mousedown.prevent="showMenu()">
@@ -197,8 +200,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { inject, ref, useTemplateRef, provide, computed } from 'vue';
-import type { Ref } from 'vue';
 import * as Misskey from 'misskey-js';
+import type { Ref } from 'vue';
+import type { Keymap } from '@/utility/hotkey.js';
 import { useNote } from '@/composables/use-note.js';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
@@ -208,7 +212,6 @@ import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { focusPrev, focusNext } from '@/utility/focus.js';
 import number from '@/filters/number.js';
 import { DI } from '@/di.js';
-import type { Keymap } from '@/utility/hotkey.js';
 
 // コンポーネント外部の依存関係
 import MkNoteSub from '@/components/MkNoteSub.vue';
@@ -272,6 +275,8 @@ const {
 	isLong,
 	showTicker,
 	canRenote,
+	canReply,
+	canClip,
 
 	renote,
 	reply,
@@ -583,6 +588,11 @@ const keymap = {
 .main {
 	flex: 1;
 	min-width: 0;
+}
+
+.notecontentOverflow {
+	max-height: 60vh;
+	overflow-y: scroll;
 }
 
 .cw {

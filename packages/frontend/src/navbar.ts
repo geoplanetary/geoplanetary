@@ -86,7 +86,7 @@ export const navbarItemDef = reactive<{
 	lists: {
 		title: i18n.ts.lists,
 		icon: 'ti ti-list',
-		show: computed(() => $i != null),
+		show: computed(() => $i != null && ($i.policies.userListAvailable || $i.isAdmin)),
 		to: '/my/lists',
 	},
 	antennas: {
@@ -119,7 +119,7 @@ export const navbarItemDef = reactive<{
 	clips: {
 		title: i18n.ts.clip,
 		icon: 'ti ti-paperclip',
-		show: computed(() => $i != null),
+		show: computed(() => $i != null && ($i.policies.clipAvailable || $i.isAdmin)),
 		to: '/my/clips',
 	},
 	channels: {

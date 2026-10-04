@@ -197,6 +197,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</MkPreferenceContainer>
 								</SearchMarker>
 
+								<SearchMarker :keywords="['overflow', 'note']">
+									<MkPreferenceContainer k="overflowLongNotes">
+										<MkSwitch v-model="overflowLongNotes">
+											<template #label><SearchLabel>{{ i18n.ts.overflowLongNotes }}</SearchLabel><span class="_tips">Geoplanetary unique</span></template>
+										</MkSwitch>
+									</MkPreferenceContainer>
+								</SearchMarker>
+
 								<SearchMarker :keywords="['footer', 'action', 'clip', 'show']">
 									<MkPreferenceContainer k="showClipButtonInNoteFooter">
 										<MkSwitch v-model="showClipButtonInNoteFooter">
@@ -390,6 +398,34 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 								</MkFolder>
 							</MkDisableSection>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['postform', 'display', 'remain', 'characters', 'chars']">
+							<MkPreferenceContainer k="postformRemainCharacterDisplay">
+								<MkRadios
+									v-model="postformRemainCharacterDisplay" :options="[
+										{value: 'counter', label: i18n.ts.postformRemainCharacterDisplayCounter},
+										{value: 'counterLegacy', label: i18n.ts.postformRemainCharacterDisplayCounterLegacy},
+										{value: 'meter', label: i18n.ts.postformRemainCharacterDisplayMeter},
+									]"
+								>
+									<template #label><SearchLabel>{{ i18n.ts.postformRemainCharacterDisplay }}</SearchLabel><span class="_tips">Geoplanetary unique</span></template>
+								</MkRadios>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['postform', 'preview', 'background', 'style']">
+							<MkPreferenceContainer k="postformPreviewBackgroundStyle">
+								<MkRadios
+									v-model="postformPreviewBackgroundStyle" :options="[
+										{value: 'darken', label: i18n.ts.postformPreviewBackgroundStyleObliqueDarken},
+										{value: 'obliqueStripe', label: i18n.ts.postformPreviewBackgroundStyleObliqueStripe},
+										{value: 'plain', label: i18n.ts.postformPreviewBackgroundStylePlain},
+									]"
+								>
+									<template #label><SearchLabel>{{ i18n.ts.postformPreviewBackgroundStyle }}</SearchLabel><span class="_tips">Geoplanetary unique</span></template>
+								</MkRadios>
+							</MkPreferenceContainer>
 						</SearchMarker>
 					</div>
 				</MkFolder>
@@ -905,6 +941,7 @@ const keepCw = prefer.model('keepCw');
 const serverDisconnectedBehavior = prefer.model('serverDisconnectedBehavior');
 const hemisphere = prefer.model('hemisphere');
 const showNoteActionsOnlyHover = prefer.model('showNoteActionsOnlyHover');
+const overflowLongNotes = prefer.model('overflowLongNotes');
 const showClipButtonInNoteFooter = prefer.model('showClipButtonInNoteFooter');
 const collapseRenotes = prefer.model('collapseRenotes');
 const advancedMfm = prefer.model('advancedMfm');
@@ -915,6 +952,8 @@ const loadRawImages = prefer.model('loadRawImages');
 const imageNewTab = prefer.model('imageNewTab');
 const showFixedPostForm = prefer.model('showFixedPostForm');
 const showFixedPostFormInChannel = prefer.model('showFixedPostFormInChannel');
+const postformRemainCharacterDisplay = prefer.model('postformRemainCharacterDisplay');
+const postformPreviewBackgroundStyle = prefer.model('postformPreviewBackgroundStyle');
 const numberOfPageCache = prefer.model('numberOfPageCache');
 const enableInfiniteScroll = prefer.model('enableInfiniteScroll');
 const useReactionPickerForContextMenu = prefer.model('useReactionPickerForContextMenu');
@@ -988,6 +1027,7 @@ watch([
 	pollingInterval,
 	enableInfiniteScroll,
 	showNoteActionsOnlyHover,
+	overflowLongNotes,
 	overridedDeviceKind,
 	alwaysConfirmFollow,
 	confirmWhenRevealingSensitiveMedia,

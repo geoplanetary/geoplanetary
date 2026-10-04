@@ -24,6 +24,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	requireRolePolicy: 'canFollowing',
+
 	prohibitMoved: true,
 
 	kind: 'write:following',
@@ -57,6 +59,12 @@ export const meta = {
 			message: 'You are blocked by that user.',
 			code: 'BLOCKED',
 			id: 'c4ab57cc-4e41-45e9-bfd9-584f61e35ce0',
+		},
+
+		restrictedByRoles: {
+			message: 'Operation restricted by roles.',
+			code: 'RESTRICTED_BY_ROLES',
+			id: '7eb29691-885e-4ec7-8655-248f4a807194',
 		},
 	},
 
@@ -103,6 +111,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			try {
 				await this.userFollowingService.follow(follower, followee, { withReplies: ps.withReplies });
 			} catch (e) {
+				if (e instanceof UserFollowingService.RestrictedByRoleError) {
+					throw new ApiError(meta.errors.restrictedByRoles);
+				}
 				if (e instanceof IdentifiableError) {
 					if (e.id === 'ec3f65c0-a9d1-47d9-8791-b2e7b9dcdced') throw new ApiError(meta.errors.alreadyFollowing);
 					if (e.id === '710e8fb0-b8c3-4922-be49-d5d93d8e6a6e') throw new ApiError(meta.errors.blocking);

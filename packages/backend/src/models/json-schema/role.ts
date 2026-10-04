@@ -52,7 +52,7 @@ export const packedRoleCondFormulaValueIsLocalOrRemoteSchema = {
 		type: {
 			type: 'string',
 			nullable: false, optional: false,
-			enum: ['isLocal', 'isRemote'],
+			enum: ['isLocal', 'isRemote', 'isFederated', 'isSubscribing', 'isPublishing', 'isForeign'],
 		},
 	},
 } as const;
@@ -66,7 +66,7 @@ export const packedRoleCondFormulaValueUserSettingBooleanSchema = {
 		type: {
 			type: 'string',
 			nullable: false, optional: false,
-			enum: ['isSuspended', 'isLocked', 'isBot', 'isCat', 'isExplorable'],
+			enum: ['isSuspended', 'isLocked', 'isBot', 'isCat', 'isExplorable', 'isNoCrawle', 'isNoAI'],
 		},
 	},
 } as const;
@@ -112,6 +112,27 @@ export const packedRoleCondFormulaValueCreatedSchema = {
 	},
 } as const;
 
+export const packedRoleCondFormulaValueLoggedInSchema = {
+	type: 'object',
+	properties: {
+		id: {
+			type: 'string', optional: false,
+		},
+		type: {
+			type: 'string',
+			nullable: false, optional: false,
+			enum: [
+				'loggedInMoreThanOrEq',
+				'loggedInLessThanOrEq',
+			],
+		},
+		day: {
+			type: 'number',
+			nullable: false, optional: false,
+		},
+	},
+} as const;
+
 export const packedRoleCondFormulaFollowersOrFollowingOrNotesSchema = {
 	type: 'object',
 	properties: {
@@ -128,9 +149,87 @@ export const packedRoleCondFormulaFollowersOrFollowingOrNotesSchema = {
 				'followingMoreThanOrEq',
 				'notesLessThanOrEq',
 				'notesMoreThanOrEq',
+				'tagCountIs',
+				'tagCountMoreThanOrEq',
+				'tagCountLessThanOrEq',
+				'fieldCountIs',
+				'fieldCountMoreThanOrEq',
+				'fieldCountLessThanOrEq',
 			],
 		},
 		value: {
+			type: 'number',
+			nullable: false, optional: false,
+		},
+	},
+} as const;
+
+export const packedRoleCondFormulaValueZeroArgSchema = {
+	type: 'object',
+	properties: {
+		id: {
+			type: 'string', optional: false,
+		},
+		type: {
+			type: 'string',
+			nullable: false, optional: false,
+			enum: ['nameIsDefault', 'isMfaEnabled', 'isSecurityKeyAvailable', 'isUsingPwlessLogin', 'emailVerified', 'avatarUnset', 'bannerUnset', 'hasTags', 'hasFields'],
+		},
+	},
+} as const;
+
+export const packedRoleCondFormulaValuePatternMatchSchema = {
+	type: 'object',
+	properties: {
+		id: {
+			type: 'string', optional: false,
+		},
+		type: {
+			type: 'string',
+			nullable: false, optional: false,
+			enum: ['usernameMatchOf', 'nameMatchOf', 'hostMatchOf', 'emailMatchOf', 'descriptionMatchOf', 'hasTagMatchOf', 'hasFieldNameMatchOf', 'hasFieldValueMatchOf'],
+		},
+		pattern: {
+			type: 'string',
+			nullable: false, optional: false,
+		},
+	},
+} as const;
+
+export const packedRoleCondFormulaValueEntropySchema = {
+	type: 'object',
+	properties: {
+		id: {
+			type: 'string', optional: false,
+		},
+		type: {
+			type: 'string',
+			nullable: false, optional: false,
+			enum: ['usernameEntropyMoreThanOrEq', 'usernameEntropyLessThanOrEq', 'usernameEntropyMeanMoreThanOrEq', 'usernameEntropyMeanLessThanOrEq'],
+		},
+		value: {
+			type: 'number',
+			nullable: false, optional: false,
+		},
+	},
+} as const;
+
+export const packedRoleCondFormulaValueBlurhashLikelySchema = {
+	type: 'object',
+	properties: {
+		id: {
+			type: 'string', optional: false,
+		},
+		type: {
+			type: 'string',
+			nullable: false, optional: false,
+			enum: ['avatarLikelyBlurhash', 'bannerLikelyBlurhash'],
+		},
+		hash: {
+			type: 'string',
+			nullable: false, optional: false,
+		},
+		diff: {
 			type: 'number',
 			nullable: false, optional: false,
 		},
@@ -150,7 +249,7 @@ export const packedRoleCondFormulaValueSchema = {
 			ref: 'RoleCondFormulaValueIsLocalOrRemote',
 		},
 		{
-			ref: 'RoleCondFormulaValueUserSettingBooleanSchema',
+			ref: 'RoleCondFormulaValueUserSettingBoolean',
 		},
 		{
 			ref: 'RoleCondFormulaValueAssignedRole',
@@ -159,7 +258,22 @@ export const packedRoleCondFormulaValueSchema = {
 			ref: 'RoleCondFormulaValueCreated',
 		},
 		{
+			ref: 'RoleCondFormulaValueLoggedIn',
+		},
+		{
 			ref: 'RoleCondFormulaFollowersOrFollowingOrNotes',
+		},
+		{
+			ref: 'RoleCondFormulaValueZeroArg',
+		},
+		{
+			ref: 'RoleCondFormulaValuePatternMatch',
+		},
+		{
+			ref: 'RoleCondFormulaValueEntropy',
+		},
+		{
+			ref: 'RoleCondFormulaValueBlurhashLikely',
 		},
 	],
 } as const;
@@ -176,7 +290,35 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		canPostNote: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		noteLengthLimit: {
+			type: 'integer',
+			optional: false, nullable: false,
+		},
 		canPublicNote: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canFederateNote: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canAttachFiles: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canReply: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canQuote: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canDirectMessage: {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
@@ -228,6 +370,10 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		driveWritable: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 		driveCapacityMb: {
 			type: 'integer',
 			optional: false, nullable: false,
@@ -235,14 +381,6 @@ export const packedRolePoliciesSchema = {
 		maxFileSizeMb: {
 			type: 'integer',
 			optional: false, nullable: false,
-		},
-		uploadableFileTypes: {
-			type: 'array',
-			optional: false, nullable: false,
-			items: {
-				type: 'string',
-				optional: false, nullable: false,
-			},
 		},
 		alwaysMarkNsfw: {
 			type: 'boolean',
@@ -268,12 +406,20 @@ export const packedRolePoliciesSchema = {
 			type: 'integer',
 			optional: false, nullable: false,
 		},
+		clipAvailable: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 		clipLimit: {
 			type: 'integer',
 			optional: false, nullable: false,
 		},
 		noteEachClipsLimit: {
 			type: 'integer',
+			optional: false, nullable: false,
+		},
+		userListAvailable: {
+			type: 'boolean',
 			optional: false, nullable: false,
 		},
 		userListLimit: {
@@ -291,6 +437,19 @@ export const packedRolePoliciesSchema = {
 		avatarDecorationLimit: {
 			type: 'integer',
 			optional: false, nullable: false,
+		},
+		canFollowing: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canFollowedFromOthers: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		requireSigninToViewContents: {
+			type: 'string',
+			optional: false, nullable: false,
+			enum: ['leave', 'force-enable', 'force-disable'],
 		},
 		canImportAntennas: {
 			type: 'boolean',
@@ -316,6 +475,14 @@ export const packedRolePoliciesSchema = {
 			type: 'string',
 			optional: false, nullable: false,
 			enum: ['available', 'readonly', 'unavailable'],
+		},
+		uploadableFileTypes: {
+			type: 'array',
+			optional: false, nullable: false,
+			items: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
 		},
 		noteDraftLimit: {
 			type: 'integer',

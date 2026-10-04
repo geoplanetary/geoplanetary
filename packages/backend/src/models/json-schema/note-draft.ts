@@ -162,6 +162,11 @@ export const packedNoteDraftSchema = {
 			optional: false, nullable: true,
 			enum: ['likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote', null],
 		},
+		flagIds: {
+			type: 'array',
+			optional: false, nullable: false,
+			items: { type: 'string', format: 'misskey:id' },
+		},
 		scheduledAt: {
 			type: 'number',
 			optional: false, nullable: true,

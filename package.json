@@ -1,10 +1,10 @@
 {
 	"name": "misskey",
-	"version": "2026.10.0",
+	"version": "2026.10.0-geoplanetary.11b",
 	"codename": "nasubi",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/misskey-dev/misskey.git"
+		"url": "https://github.com/geoplanetary/geoplanetary.git"
 	},
 	"packageManager": "pnpm@11.25.0",
 	"workspaces": [
@@ -15,6 +15,7 @@
 		"packages/frontend-embed",
 		"packages/i18n",
 		"packages/icons-subsetter",
+		"packages/lcf-expression",
 		"packages/sw",
 		"packages/misskey-js",
 		"packages/misskey-js/generator",

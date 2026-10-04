@@ -294,6 +294,11 @@ export const packedMetaLiteSchema = {
 			optional: false, nullable: false,
 			ref: 'RolePolicies',
 		},
+		notePolicies: {
+			type: 'object',
+			optional: false, nullable: false,
+			ref: 'NotePolicies',
+		},
 		noteSearchableScope: {
 			type: 'string',
 			enum: ['local', 'global'],

@@ -201,6 +201,11 @@ export const paramDef = {
 			},
 			required: ['choices'],
 		},
+		flagIds: {
+			type: 'array',
+			uniqueItems: true,
+			items: { type: 'string', format: 'misskey:id' },
+		},
 		scheduledAt: { type: 'integer', nullable: true },
 		isActuallyScheduled: { type: 'boolean', default: false },
 	},
@@ -231,6 +236,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				visibility: ps.visibility,
 				visibleUserIds: ps.visibleUserIds ?? [],
 				channelId: ps.channelId ?? null,
+				flagIds: ps.flagIds ?? [],
 				scheduledAt: ps.scheduledAt ? new Date(ps.scheduledAt) : null,
 				isActuallyScheduled: ps.isActuallyScheduled,
 			}).catch((err) => {

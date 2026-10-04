@@ -18,6 +18,8 @@ import { IdService } from '@/core/IdService.js';
 import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
 import { CacheService } from '@/core/CacheService.js';
+import { RoleService } from '../RoleService.js';
+import { NoteModerationService } from '../NoteModerationService.js';
 import type { OnModuleInit } from '@nestjs/common';
 import type { CustomEmojiService } from '../CustomEmojiService.js';
 import type { ReactionService } from '../ReactionService.js';
@@ -68,6 +70,8 @@ export class NoteEntityService implements OnModuleInit {
 	private reactionsBufferingService: ReactionsBufferingService;
 	private idService: IdService;
 	private cacheService: CacheService;
+	private roleService: RoleService;
+	private noteModerationService: NoteModerationService;
 	private noteLoader = new DebounceLoader(this.findNoteOrFail);
 
 	constructor(
@@ -115,6 +119,8 @@ export class NoteEntityService implements OnModuleInit {
 		this.reactionsBufferingService = this.moduleRef.get('ReactionsBufferingService');
 		this.idService = this.moduleRef.get('IdService');
 		this.cacheService = this.moduleRef.get('CacheService');
+		this.roleService = this.moduleRef.get('RoleService');
+		this.noteModerationService = this.moduleRef.get('NoteModerationService');
 	}
 
 	@bindThis
@@ -136,7 +142,17 @@ export class NoteEntityService implements OnModuleInit {
 		// TODO: ugcVisibilityForVisitor が local の場合も、付随するリモートのノートをリンクだけ残して内容を隠せるようにする
 		if (meId == null && this.meta.ugcVisibilityForVisitor === 'none') return true;
 
-		if (packedNote.user.requireSigninToViewContents && meId == null) {
+		const imMod = meId && await this.roleService.isModerator({ id: meId });
+		if (packedNote.policies?.masked && !imMod) {
+			return true;
+		}
+
+		const policies = await this.roleService.getUserPolicies(packedNote.userId);
+		if (policies.requireSigninToViewContents === 'force-enable' && meId == null) {
+			return true;
+		}
+
+		if (policies.requireSigninToViewContents === 'leave' && packedNote.user.requireSigninToViewContents && meId == null) {
 			return true;
 		}
 
@@ -275,6 +291,13 @@ export class NoteEntityService implements OnModuleInit {
 
 	@bindThis
 	public async isVisibleForMe(note: MiNote, meId: MiUser['id'] | null): Promise<boolean> {
+		const imModerator = await this.roleService.isModerator(meId ? { id: meId } : null);
+		const notePolicies = await this.noteModerationService.getNotePolicies(note.id);
+
+		if (notePolicies.masked && !imModerator) {
+			return false;
+		}
+
 		// This code must always be synchronized with the checks in QueryService.generateVisibilityQuery.
 		// visibility が specified かつ自分が指定されていなかったら非表示
 		if (note.visibility === 'specified') {
@@ -365,6 +388,7 @@ export class NoteEntityService implements OnModuleInit {
 		}, options);
 
 		const meId = me ? me.id : null;
+		const imMod = await this.roleService.isModerator(me ?? null);
 		const note = typeof src === 'object' ? src : await this.noteLoader.load(src);
 		const host = note.userHost;
 
@@ -394,6 +418,9 @@ export class NoteEntityService implements OnModuleInit {
 			.map(x => this.reactionService.decodeReaction(x).reaction.replaceAll(':', ''));
 		const packedFiles = options?._hint_?.packedFiles;
 		const packedUsers = options?._hint_?.packedUsers;
+
+		const noteFlags = (await this.noteModerationService.getFlagsOfNote(note.id)).filter(v => imMod || v.isPublic);
+		const notePolicies = await this.noteModerationService.getNotePolicies(note.id);
 
 		const packed: Packed<'Note'> = await awaitAll({
 			id: note.id,
@@ -431,6 +458,20 @@ export class NoteEntityService implements OnModuleInit {
 			hasPoll: note.hasPoll || undefined,
 			uri: note.uri ?? undefined,
 			url: note.url ?? undefined,
+			flagIds: noteFlags.map(v => v.id),
+			flags: noteFlags.map(v => {
+				return {
+					id: v.id,
+					name: v.name,
+					description: v.description,
+					color: v.color,
+					iconUrl: v.iconUrl,
+					asBadge: v.asBadge,
+					canAssignByUser: v.canAssignByUser,
+					displayOrder: v.displayOrder,
+				};
+			}),
+			policies: notePolicies,
 
 			...(opts.detail ? {
 				clippedCount: note.clippedCount,

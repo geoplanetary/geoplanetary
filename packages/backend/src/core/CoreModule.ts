@@ -44,6 +44,7 @@ import { ModerationLogService } from './ModerationLogService.js';
 import { NoteCreateService } from './NoteCreateService.js';
 import { NoteDeleteService } from './NoteDeleteService.js';
 import { NotePiningService } from './NotePiningService.js';
+import { NoteModerationService } from './NoteModerationService.js';
 import { NoteDraftService } from './NoteDraftService.js';
 import { NotificationService } from './NotificationService.js';
 import { PollService } from './PollService.js';
@@ -119,6 +120,7 @@ import { MutingEntityService } from './entities/MutingEntityService.js';
 import { RenoteMutingEntityService } from './entities/RenoteMutingEntityService.js';
 import { NoteEntityService } from './entities/NoteEntityService.js';
 import { NoteFavoriteEntityService } from './entities/NoteFavoriteEntityService.js';
+import { NoteFlagEntityService } from './entities/NoteFlagEntityService.js';
 import { NoteReactionEntityService } from './entities/NoteReactionEntityService.js';
 import { NoteDraftEntityService } from './entities/NoteDraftEntityService.js';
 import { NotificationEntityService } from './entities/NotificationEntityService.js';
@@ -189,6 +191,7 @@ const $ModerationLogService: Provider = { provide: 'ModerationLogService', useEx
 const $NoteCreateService: Provider = { provide: 'NoteCreateService', useExisting: NoteCreateService };
 const $NoteDeleteService: Provider = { provide: 'NoteDeleteService', useExisting: NoteDeleteService };
 const $NotePiningService: Provider = { provide: 'NotePiningService', useExisting: NotePiningService };
+const $NoteModerationService: Provider = { provide: 'NoteModerationService', useExisting: NoteModerationService };
 const $NoteDraftService: Provider = { provide: 'NoteDraftService', useExisting: NoteDraftService };
 const $NotificationService: Provider = { provide: 'NotificationService', useExisting: NotificationService };
 const $PollService: Provider = { provide: 'PollService', useExisting: PollService };
@@ -272,6 +275,7 @@ const $MutingEntityService: Provider = { provide: 'MutingEntityService', useExis
 const $RenoteMutingEntityService: Provider = { provide: 'RenoteMutingEntityService', useExisting: RenoteMutingEntityService };
 const $NoteEntityService: Provider = { provide: 'NoteEntityService', useExisting: NoteEntityService };
 const $NoteFavoriteEntityService: Provider = { provide: 'NoteFavoriteEntityService', useExisting: NoteFavoriteEntityService };
+const $NoteFlagEntityService: Provider = { provide: 'NoteFlagEntityService', useExisting: NoteFlagEntityService };
 const $NoteReactionEntityService: Provider = { provide: 'NoteReactionEntityService', useExisting: NoteReactionEntityService };
 const $NoteDraftEntityService: Provider = { provide: 'NoteDraftEntityService', useExisting: NoteDraftEntityService };
 const $NotificationEntityService: Provider = { provide: 'NotificationEntityService', useExisting: NotificationEntityService };
@@ -342,6 +346,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		NoteCreateService,
 		NoteDeleteService,
 		NotePiningService,
+		NoteModerationService,
 		NoteDraftService,
 		NotificationService,
 		PollService,
@@ -425,6 +430,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		RenoteMutingEntityService,
 		NoteEntityService,
 		NoteFavoriteEntityService,
+		NoteFlagEntityService,
 		NoteReactionEntityService,
 		NoteDraftEntityService,
 		NotificationEntityService,
@@ -493,6 +499,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$NoteCreateService,
 		$NoteDeleteService,
 		$NotePiningService,
+		$NoteModerationService,
 		$NoteDraftService,
 		$NotificationService,
 		$PollService,
@@ -576,6 +583,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$RenoteMutingEntityService,
 		$NoteEntityService,
 		$NoteFavoriteEntityService,
+		$NoteFlagEntityService,
 		$NoteReactionEntityService,
 		$NoteDraftEntityService,
 		$NotificationEntityService,
@@ -644,6 +652,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		NoteCreateService,
 		NoteDeleteService,
 		NotePiningService,
+		NoteModerationService,
 		NoteDraftService,
 		NotificationService,
 		PollService,
@@ -726,6 +735,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		RenoteMutingEntityService,
 		NoteEntityService,
 		NoteFavoriteEntityService,
+		NoteFlagEntityService,
 		NoteReactionEntityService,
 		NoteDraftEntityService,
 		NotificationEntityService,
@@ -794,6 +804,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$NoteCreateService,
 		$NoteDeleteService,
 		$NotePiningService,
+		$NoteModerationService,
 		$NoteDraftService,
 		$NotificationService,
 		$PollService,
@@ -875,6 +886,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$RenoteMutingEntityService,
 		$NoteEntityService,
 		$NoteFavoriteEntityService,
+		$NoteFlagEntityService,
 		$NoteReactionEntityService,
 		$NoteDraftEntityService,
 		$NotificationEntityService,

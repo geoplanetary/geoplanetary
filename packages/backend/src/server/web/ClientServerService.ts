@@ -41,6 +41,7 @@ import { bindThis } from '@/decorators.js';
 import { FlashEntityService } from '@/core/entities/FlashEntityService.js';
 import { ReversiGameEntityService } from '@/core/entities/ReversiGameEntityService.js';
 import { AnnouncementEntityService } from '@/core/entities/AnnouncementEntityService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { FeedService } from './FeedService.js';
 import { UrlPreviewService } from './UrlPreviewService.js';
 import { ClientLoggerService } from './ClientLoggerService.js';
@@ -127,6 +128,7 @@ export class ClientServerService {
 		private feedService: FeedService,
 		private htmlTemplateService: HtmlTemplateService,
 		private clientLoggerService: ClientLoggerService,
+		private roleServie: RoleService,
 	) {
 		//this.createServer = this.createServer.bind(this);
 		const backendRootdir = resolve(this.config.rootDir, 'packages/backend');
@@ -455,8 +457,10 @@ export class ClientServerService {
 				usernameLower: username.toLowerCase(),
 				host: host ?? IsNull(),
 				isSuspended: false,
-				requireSigninToViewContents: false,
 			});
+			const policies = user ? await this.roleServie.getUserPolicies(user.id) : undefined;
+			if (policies?.requireSigninToViewContents === 'force-enable') return null;
+			if (policies?.requireSigninToViewContents === 'leave' && user && user.requireSigninToViewContents) return null;
 
 			if (user == null) return null;
 
@@ -591,10 +595,12 @@ export class ClientServerService {
 					renote: true,
 				},
 			});
+			const policies = note ? await this.roleServie.getUserPolicies(note.userId) : undefined;
+			const requireSigninToViewContents = policies?.requireSigninToViewContents === 'force-enable' || ((policies?.requireSigninToViewContents === 'leave' && note?.user?.requireSigninToViewContents) ?? false);
 
 			if (
 				note &&
-				!note.user!.requireSigninToViewContents &&
+				!requireSigninToViewContents &&
 				(this.meta.ugcVisibilityForVisitor === 'all' ||
 					(this.meta.ugcVisibilityForVisitor === 'local' && note.userHost == null)
 				)

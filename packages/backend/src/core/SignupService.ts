@@ -89,7 +89,7 @@ export class SignupService {
 		}
 
 		if (!opts.ignorePreservedUsernames && this.meta.rootUserId != null) {
-			const isPreserved = this.meta.preservedUsernames.map(x => x.toLowerCase()).includes(username.toLowerCase());
+			const isPreserved = this.utilityService.isMatchKeywords(username.toLowerCase(), this.meta.preservedUsernames, 'identical');
 			if (isPreserved) {
 				throw new Error('USED_USERNAME');
 			}

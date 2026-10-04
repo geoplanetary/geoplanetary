@@ -47,6 +47,22 @@ type CondFormulaValueIsRemote = {
 	type: 'isRemote';
 };
 
+type CondFormulaValueIsFederated = {
+	type: 'isFederated';
+};
+
+type CondFormulaValueIsSubscribing = {
+	type: 'isSubscribing';
+};
+
+type CondFormulaValueIsPublishing = {
+	type: 'isPublishing';
+};
+
+type CondFormulaValueIsForeign = {
+	type: 'isForeign';
+};
+
 /**
  * 既に指定のマニュアルロールにアサインされている場合のみ成立とする
  */
@@ -90,6 +106,26 @@ type CondFormulaValueIsExplorable = {
 	type: 'isExplorable';
 };
 
+type CondFormulaValueIsMfaEnabled = {
+	type: 'isMfaEnabled';
+};
+
+type CondFormulaValueIsSecurityKeyAvailable = {
+	type: 'isSecurityKeyAvailable';
+};
+
+type CondFormulaValueIsUsingPwlessLogin = {
+	type: 'isUsingPwlessLogin';
+};
+
+type CondFormulaValueIsNoCrawle = {
+	type: 'isNoCrawle';
+};
+
+type CondFormulaValueIsNoAI = {
+	type: 'isNoAI';
+};
+
 /**
  * ユーザが作成されてから指定期間経過した場合のみ成立とする
  */
@@ -104,6 +140,16 @@ type CondFormulaValueCreatedLessThan = {
 type CondFormulaValueCreatedMoreThan = {
 	type: 'createdMoreThan';
 	sec: number;
+};
+
+type CondFormulaValueLoggedInLessThanOrEq = {
+	type: 'loggedInLessThanOrEq';
+	day: number;
+};
+
+type CondFormulaValueLoggedInMoreThanOrEq = {
+	type: 'loggedInMoreThanOrEq';
+	day: number;
 };
 
 /**
@@ -154,26 +200,189 @@ type CondFormulaValueNotesMoreThanOrEq = {
 	value: number;
 };
 
+type CondFormulaValueUsernameMatchOf = {
+	type: 'usernameMatchOf';
+	pattern: string;
+};
+
+type CondFormulaValueUsernameEntropyMoreThanOrEq = {
+	type: 'usernameEntropyMoreThanOrEq';
+	value: number;
+};
+
+type CondFormulaValueUsernameEntropyLessThanOrEq = {
+	type: 'usernameEntropyLessThanOrEq';
+	value: number;
+};
+
+type CondFormulaValueUsernameEntropyMeanMoreThanOrEq = {
+	type: 'usernameEntropyMeanMoreThanOrEq';
+	value: number;
+};
+
+type CondFormulaValueUsernameEntropyMeanLessThanOrEq = {
+	type: 'usernameEntropyMeanLessThanOrEq';
+	value: number;
+};
+
+type CondFormulaValueHostMatchOf = {
+	type: 'hostMatchOf';
+	pattern: string;
+};
+
+type CondFormulaValueNameMatchOf = {
+	type: 'nameMatchOf';
+	pattern: string;
+};
+
+type CondFormulaValueNameIsDefault = {
+	type: 'nameIsDefault';
+};
+
+type CondFormulaValueEmailVerified = {
+	type: 'emailVerified';
+};
+
+type CondFormulaValueEmailMatchOf = {
+	type: 'emailMatchOf';
+	pattern: string;
+};
+
+type CondFormulaValueAvatarUnset = {
+	type: 'avatarUnset';
+};
+
+type CondFormulaValueAvatarLikelyBlurhash = {
+	type: 'avatarLikelyBlurhash';
+	hash: string;
+	diff: number;
+};
+
+type CondFormulaValueBannerUnset = {
+	type: 'bannerUnset';
+};
+
+type CondFormulaValueBannerLikelyBlurhash = {
+	type: 'bannerLikelyBlurhash';
+	hash: string;
+	diff: number;
+};
+
+type CondFormulaValueDescriptionMatchOf = {
+	type: 'descriptionMatchOf';
+	pattern: string;
+};
+
+type CondFormulaValueHasTags = {
+	type: 'hasTags';
+};
+
+type CondFormulaValueHashtagCountIs = {
+	type: 'tagCountIs';
+	value: number;
+};
+
+type CondFormulaValueHashtagCountMoreThanOrEq = {
+	type: 'tagCountMoreThanOrEq';
+	value: number;
+};
+
+type CondFormulaValueHashtagCountLessThanOrEq = {
+	type: 'tagCountLessThanOrEq';
+	value: number;
+};
+
+type CondFormulaValueHasHashtagMatchOf = {
+	type: 'hasTagMatchOf';
+	pattern: string;
+};
+
+type CondFormulaValueHasFields = {
+	type: 'hasFields';
+};
+
+type CondFormulaValueHashFieldCountIs = {
+	type: 'fieldCountIs';
+	value: number;
+};
+
+type CondFormulaValueHashFieldCountMoreThanOrEq = {
+	type: 'fieldCountMoreThanOrEq';
+	value: number;
+};
+
+type CondFormulaValueHashFieldCountLessThanOrEq = {
+	type: 'fieldCountLessThanOrEq';
+	value: number;
+};
+
+type CondFormulaValueHasHashFieldNameMatchOf = {
+	type: 'hasFieldNameMatchOf';
+	pattern: string;
+};
+
+type CondFormulaValueHasHashFieldValueMatchOf = {
+	type: 'hasFieldValueMatchOf';
+	pattern: string;
+};
+
 export type RoleCondFormulaValue = { id: string } & (
 	CondFormulaValueAnd |
 	CondFormulaValueOr |
 	CondFormulaValueNot |
 	CondFormulaValueIsLocal |
 	CondFormulaValueIsRemote |
+	CondFormulaValueIsFederated |
+	CondFormulaValueIsSubscribing |
+	CondFormulaValueIsPublishing |
+	CondFormulaValueIsForeign |
 	CondFormulaValueIsSuspended |
 	CondFormulaValueIsLocked |
 	CondFormulaValueIsBot |
 	CondFormulaValueIsCat |
 	CondFormulaValueIsExplorable |
+	CondFormulaValueIsMfaEnabled |
+	CondFormulaValueIsSecurityKeyAvailable |
+	CondFormulaValueIsUsingPwlessLogin |
+	CondFormulaValueIsNoCrawle |
+	CondFormulaValueIsNoAI |
 	CondFormulaValueRoleAssignedTo |
 	CondFormulaValueCreatedLessThan |
 	CondFormulaValueCreatedMoreThan |
+	CondFormulaValueLoggedInLessThanOrEq |
+	CondFormulaValueLoggedInMoreThanOrEq |
 	CondFormulaValueFollowersLessThanOrEq |
 	CondFormulaValueFollowersMoreThanOrEq |
 	CondFormulaValueFollowingLessThanOrEq |
 	CondFormulaValueFollowingMoreThanOrEq |
 	CondFormulaValueNotesLessThanOrEq |
-	CondFormulaValueNotesMoreThanOrEq
+	CondFormulaValueNotesMoreThanOrEq |
+	CondFormulaValueUsernameMatchOf |
+	CondFormulaValueUsernameEntropyMoreThanOrEq |
+	CondFormulaValueUsernameEntropyLessThanOrEq |
+	CondFormulaValueUsernameEntropyMeanMoreThanOrEq |
+	CondFormulaValueUsernameEntropyMeanLessThanOrEq |
+	CondFormulaValueHostMatchOf |
+	CondFormulaValueNameMatchOf |
+	CondFormulaValueNameIsDefault |
+	CondFormulaValueEmailVerified |
+	CondFormulaValueEmailMatchOf |
+	CondFormulaValueAvatarUnset |
+	CondFormulaValueAvatarLikelyBlurhash |
+	CondFormulaValueBannerUnset |
+	CondFormulaValueBannerLikelyBlurhash |
+	CondFormulaValueDescriptionMatchOf |
+	CondFormulaValueHasTags |
+	CondFormulaValueHashtagCountIs |
+	CondFormulaValueHashtagCountMoreThanOrEq |
+	CondFormulaValueHashtagCountLessThanOrEq |
+	CondFormulaValueHasHashtagMatchOf |
+	CondFormulaValueHasFields |
+	CondFormulaValueHashFieldCountIs |
+	CondFormulaValueHashFieldCountMoreThanOrEq |
+	CondFormulaValueHashFieldCountLessThanOrEq |
+	CondFormulaValueHasHashFieldNameMatchOf |
+	CondFormulaValueHasHashFieldValueMatchOf
 );
 
 @Entity('role')

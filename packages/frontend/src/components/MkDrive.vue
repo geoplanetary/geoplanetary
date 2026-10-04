@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<span v-if="folder != null" :class="[$style.navPathItem, $style.navSeparator]"><i class="ti ti-chevron-right"></i></span>
 				<span v-if="folder != null" :class="[$style.navPathItem, $style.navCurrent]">{{ folder.name }}</span>
 			</div>
-			<button class="_button" :class="$style.navMenu" @click="showMenu"><i class="ti ti-dots"></i></button>
+			<button v-if="isDriveWritable" class="_button" :class="$style.navMenu" @click="showMenu"><i class="ti ti-dots"></i></button>
 		</nav>
 	</template>
 
@@ -185,6 +185,7 @@ import { globalEvents, useGlobalEvent } from '@/events.js';
 import { checkDragDataType, getDragData, setDragData } from '@/drag-and-drop.js';
 import { getDriveFileMenu } from '@/utility/get-drive-file-menu.js';
 import { Paginator } from '@/utility/paginator.js';
+import { $i } from '@/i';
 
 const props = withDefaults(defineProps<{
 	initialFolder?: Misskey.entities.DriveFolder | Misskey.entities.DriveFolder['id'] | null;
@@ -211,6 +212,8 @@ const shouldEnableInfiniteScroll = computed(() => {
 
 const folder = ref<Misskey.entities.DriveFolder | null>(null);
 const hierarchyFolders = ref<Misskey.entities.DriveFolder[]>([]);
+
+const isDriveWritable = ref<boolean>(!$i || ($i.isAdmin ?? false) || $i.policies.driveWritable);
 
 // ドロップされようとしているか
 const draghover = ref(false);
@@ -699,7 +702,9 @@ function showMenu(ev: PointerEvent) {
 }
 
 function onContextmenu(ev: PointerEvent) {
-	os.contextMenu(getMenu(), ev);
+	if (isDriveWritable.value) {
+		os.contextMenu(getMenu(), ev);
+	}
 }
 
 useGlobalEvent('driveFileCreated', (file) => {

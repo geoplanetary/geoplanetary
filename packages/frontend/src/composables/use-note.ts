@@ -4,14 +4,18 @@
  */
 
 import { ref } from 'vue';
-import type { Ref } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import { isLink } from '@@/js/is-link.js';
 import { shouldCollapsed } from '@@/js/collapsed.js';
 import { host } from '@@/js/config.js';
-import { pleaseLogin } from '@/utility/please-login.js';
+import type { Ref } from 'vue';
 import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
+import type { DI as DIType } from '@/di.js';
+import type { ExtractInjectedType } from '@/types/misc.js';
+import type { MenuItem } from '@/types/menu.js';
+import type { WordMuteResult } from '@/utility/check-word-mute.js';
+import { pleaseLogin } from '@/utility/please-login.js';
 import { checkWordMute } from '@/utility/check-word-mute.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import * as sound from '@/utility/sound.js';
@@ -34,10 +38,6 @@ import MkUsersTooltip from '@/components/MkUsersTooltip.vue';
 import MkReactionsViewerDetails from '@/components/MkReactionsViewer.details.vue';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import { notePage } from '@/filters/note.js';
-import type { DI as DIType } from '@/di.js';
-import type { ExtractInjectedType } from '@/types/misc.js';
-import type { MenuItem } from '@/types/menu.js';
-import type { WordMuteResult } from '@/utility/check-word-mute.js';
 
 export interface UseNoteProps {
 	note: Misskey.entities.Note;
@@ -160,7 +160,9 @@ export function useNote(
 	const urls = parsed ? extractUrlFromMfm(parsed).filter((url) => appearNote.renote?.url !== url && appearNote.renote?.uri !== url) : null;
 	const isLong = shouldCollapsed(appearNote, urls ?? []);
 	const collapsed = ref(appearNote.cw == null && isLong);
-	const canRenote = ['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id);
+	const canRenote = ($i?.policies.canQuote ?? true) && (appearNote.policies.enableQuote ?? true) && (['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id));
+	const canReply = ($i?.policies.canReply ?? true) && (appearNote.policies.enableReply ?? true) || (appearNote.userId === $i?.id);
+	const canClip = $i?.policies.clipAvailable ?? $i?.isAdmin ?? false;
 	const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && appearNote.user.instance);
 	const renoteCollapsed = ref(prefer.s.collapseRenotes && isRenote && (($i && ($i.id === rawNote.userId || $i.id === appearNote.userId)) || ($appearNote.myReaction != null)));
 
@@ -449,6 +451,8 @@ export function useNote(
 		isLong,
 		showTicker,
 		canRenote,
+		canReply,
+		canClip,
 
 		// アクション関数
 		renote,

@@ -19,6 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</button>
 		</div>
 		<div :class="$style.headerRight">
+			<span v-if="prefer.s.postformRemainCharacterDisplay === 'counterLegacy'" :class="[$style.textCountLegacy, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</span>
 			<template v-if="!(targetChannel != null && fixed)">
 				<button v-if="targetChannel == null" ref="visibilityButton" v-tooltip="i18n.ts.visibility" :class="['_button', $style.headerRightItem, $style.visibility]" @click="setVisibility">
 					<span v-if="visibility === 'public'"><i class="ti ti-world"></i></span>
@@ -32,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span :class="$style.headerRightButtonText">{{ targetChannel.name }}</span>
 				</button>
 			</template>
-			<button v-if="visibility !== 'specified'" v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="targetChannel != null" @click="toggleLocalOnly">
+			<button v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="!$i.policies.canFederateNote || targetChannel != null || visibility === 'specified'" @click="toggleLocalOnly">
 				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>
 				<span v-else><i class="ti ti-rocket-off"></i></span>
 			</button>
@@ -70,7 +71,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 		</I18n> - <button class="_textButton" @click="cancelSchedule()">{{ i18n.ts.cancel }}</button>
 	</MkInfo>
-	<MkInfo v-if="hasNotSpecifiedMentions" warn :class="$style.hasNotSpecifiedMentions">{{ i18n.ts.notSpecifiedMentionWarning }} - <button class="_textButton" @click="addMissingMention()">{{ i18n.ts.add }}</button></MkInfo>
+	<MkInfo v-if="annoying && visibility === 'public'" warn :class="$style.noteWarnings">{{ i18n.ts.thisPostMayBeAnnoying }} - <button class="_textButton" @click="visibility = 'home'">{{ i18n.ts.thisPostMayBeAnnoyingHome }}</button></MkInfo>
+	<MkInfo v-if="!localOnly && 8192 < textLength" warn :class="$style.noteWarnings">{{ i18n.ts.textLengthReachUpstreamHardLimitWarning }}</MkInfo>
+	<MkInfo v-if="hasNotSpecifiedMentions" warn :class="$style.noteWarnings">{{ i18n.ts.notSpecifiedMentionWarning }} - <button class="_textButton" @click="addMissingMention()">{{ i18n.ts.add }}</button></MkInfo>
 	<div v-show="useCw" :class="$style.cwOuter">
 		<input ref="cwInputEl" v-model="cw" :class="$style.cw" :placeholder="i18n.ts.annotation" @keydown="onKeydown" @keyup="onKeyup" @compositionend="onCompositionEnd">
 		<div v-if="maxCwTextLength - cwTextLength < 20" :class="['_acrylic', $style.cwTextCount, { [$style.cwTextOver]: cwTextLength > maxCwTextLength }]">{{ maxCwTextLength - cwTextLength }}</div>
@@ -78,8 +81,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="[$style.textOuter, { [$style.withCw]: useCw }]">
 		<div v-if="targetChannel" :class="$style.colorBar" :style="{ background: targetChannel.color }"></div>
 		<textarea ref="textareaEl" v-model="text" :class="[$style.text]" :disabled="posting || posted" :readonly="textAreaReadOnly" :placeholder="placeholder" data-testid="post-form-text" @keydown="onKeydown" @keyup="onKeyup" @paste="onPaste" @compositionupdate="onCompositionUpdate" @compositionend="onCompositionEnd"></textarea>
-		<div v-if="maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
+		<div v-if="prefer.s.postformRemainCharacterDisplay === 'counter' && maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
 	</div>
+	<MkGauge v-if="prefer.s.postformRemainCharacterDisplay === 'meter'" :value="textLength" :maxValue="maxTextLength" :mode="'fraction'"/>
 	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
 	<div v-if="uploader.items.value.length > 0" style="padding: 12px;">
@@ -89,13 +93,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkUploaderItems :items="uploader.items.value" @showMenu="(item, ev) => showPerUploadItemMenu(item, ev)" @showMenuViaContextmenu="(item, ev) => showPerUploadItemMenuViaContextmenu(item, ev)"/>
 	</div>
 	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
-	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
+	<MkNotePreview v-if="showPreview" :class="[$style.preview, prefer.s.postformPreviewBackgroundStyle === 'darken' ? $style.darkenPreview : prefer.s.postformPreviewBackgroundStyle === 'obliqueStripe' ? $style.obliqueStripedPreview : $style.plainPreview]" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
 	<div v-if="showingOptions" style="padding: 8px 16px;">
 	</div>
 	<footer ref="footerEl" :class="$style.footer">
 		<div :class="$style.footerLeft">
-			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.upload + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromPc"><i class="ti ti-photo-plus"></i></button>
-			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.fromDrive + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromDrive"><i class="ti ti-cloud-download"></i></button>
+			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.upload + ')'" class="_button" :class="$style.footerButton" :disabled="!$i.policies.canAttachFiles" @click="chooseFileFromPc"><i class="ti ti-photo-plus"></i></button>
+			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.fromDrive + ')'" class="_button" :class="$style.footerButton" :disabled="!$i.policies.canAttachFiles" @click="chooseFileFromDrive"><i class="ti ti-cloud-download"></i></button>
 			<button v-tooltip="i18n.ts.poll" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: poll }]" @click="togglePoll"><i class="ti ti-chart-arrows"></i></button>
 			<button v-tooltip="i18n.ts.useCw" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: useCw }]" @click="useCw = !useCw"><i class="ti ti-eye-off"></i></button>
 			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
@@ -131,6 +135,7 @@ import XPostFormAttaches from '@/components/MkPostFormAttaches.vue';
 import XTextCounter from '@/components/MkPostForm.TextCounter.vue';
 import MkPollEditor from '@/components/MkPollEditor.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
+import MkGauge from '@/components/MkGauge.vue';
 import { erase, unique } from '@/utility/array.js';
 import { extractMentions } from '@/utility/extract-mentions.js';
 import { formatTimeString } from '@/utility/format-time-string.js';
@@ -144,6 +149,7 @@ import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { ensureSignin, notesCount, incNotesCount } from '@/i.js';
 import { getAccounts, getAccountMenu } from '@/accounts.js';
+import { noteFlagsCache } from '@/cache.js';
 import { deepClone } from '@/utility/clone.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import { miLocalStorage } from '@/local-storage.js';
@@ -223,6 +229,7 @@ const justEndedComposition = ref(false);
 const renoteTargetNote: ShallowRef<PostFormProps['renote'] | null> = shallowRef(props.renote);
 const replyTargetNote: ShallowRef<PostFormProps['reply'] | null> = shallowRef(props.reply);
 const targetChannel = shallowRef(props.channel);
+const flags = ref<Set<Misskey.entities.NoteFlagLite['id']>>(new Set([]));
 
 const serverDraftId = ref<string | null>(null);
 const postFormActions = getPluginHandlers('post_form_action');
@@ -297,7 +304,7 @@ const textLength = computed((): number => {
 });
 
 const maxTextLength = computed((): number => {
-	return instance ? instance.maxNoteTextLength : 1000;
+	return $i ? $i.policies.noteLengthLimit : (instance ? instance.maxNoteTextLength : 1000);
 });
 
 const cwTextLength = computed((): number => {
@@ -307,6 +314,8 @@ const cwTextLength = computed((): number => {
 const maxCwTextLength = 100;
 
 const canPost = computed((): boolean => {
+	const ast = mfm.parse(text.value);
+	const has_mention = extractMentions(ast).filter(u => u.username !== $i.username || u.host !== $i.host).length > 0;
 	return !props.mock && !posting.value && !posted.value && !uploader.uploading.value && (uploader.items.value.length === 0 || uploader.readyForUpload.value) &&
 		(
 			1 <= textLength.value ||
@@ -325,7 +334,20 @@ const canPost = computed((): boolean => {
 				) : true
 		) &&
 		(files.value.length <= 16) &&
-		(!poll.value || poll.value.choices.length >= 2);
+		(!poll.value || poll.value.choices.length >= 2) &&
+		(has_mention ? $i.policies.canReply : true) &&
+		((props.reply && props.reply.userId !== $i.id) ? $i.policies.canReply : true) &&
+		(quoteId.value ? $i.policies.canQuote : true) &&
+		(props.renote ? $i.policies.canQuote : true) &&
+		(visibility.value === 'specified' ? ((has_mention || visibleUsers.value.filter(u => u.id !== $i.id).length > 0) ? $i.policies.canDirectMessage : true) : true);
+});
+
+const annoying = computed((): boolean => {
+	return text.value.includes('$[x2') ||
+		text.value.includes('$[x3') ||
+		text.value.includes('$[x4') ||
+		text.value.includes('$[scale') ||
+		text.value.includes('$[position');
 });
 
 // cannot save pure renote as draft
@@ -389,6 +411,10 @@ if (targetChannel.value) {
 	localOnly.value = true; // TODO: チャンネルが連合するようになった折には消す
 }
 
+if (!$i.policies.canFederateNote) {
+	localOnly.value = true;
+}
+
 // 公開以外へのリプライ時は元の公開範囲を引き継ぐ
 if (replyTargetNote.value && ['home', 'followers', 'specified'].includes(replyTargetNote.value.visibility)) {
 	if (replyTargetNote.value.visibility === 'home' && visibility.value === 'followers') {
@@ -438,6 +464,7 @@ function watchForDraft() {
 	watch(quoteId, () => saveDraft());
 	watch(reactionAcceptance, () => saveDraft());
 	watch(scheduledAt, () => saveDraft());
+	watch(flags, () => saveDraft(), { deep: true });
 }
 
 function checkMissingMention() {
@@ -553,6 +580,11 @@ async function toggleLocalOnly() {
 		return;
 	}
 
+	if (!$i.policies.canFederateNote) {
+		localOnly.value = true;
+		return;
+	}
+
 	const neverShowInfo = miLocalStorage.getItem('neverShowLocalOnlyInfo');
 
 	if (!localOnly.value && neverShowInfo !== 'true') {
@@ -649,6 +681,18 @@ function showOtherSettings() {
 		action: () => {
 			toggleReactionAcceptance();
 		},
+	}, {
+		type: 'parent',
+		text: i18n.ts.noteFlags,
+		icon: 'ti ti-flag',
+		children: async () => (await noteFlagsCache.fetch()).filter(f => 'target' in f ? f.target === 'manual' : f.canAssignByUser).map(flag => ({
+			type: 'switch',
+			text: flag.name,
+			ref: computed({
+				get: () => flags.value.has(flag.id),
+				set: (v) => v ? flags.value.add(flag.id) : flags.value.delete(flag.id),
+			}),
+		})),
 	}, { type: 'divider' }, {
 		type: 'button',
 		text: i18n.ts._drafts.saveToDraft,
@@ -846,6 +890,7 @@ function onDrop(ev: DragEvent): void {
 	// ファイルだったら
 	if (ev.dataTransfer && ev.dataTransfer.files.length > 0) {
 		ev.preventDefault();
+		if (!$i.policies.canAttachFiles) { return; }
 		uploader.addFiles(Array.from(ev.dataTransfer.files));
 		return;
 	}
@@ -853,6 +898,7 @@ function onDrop(ev: DragEvent): void {
 	//#region ドライブのファイル
 	{
 		const droppedData = getDragData(ev, 'driveFiles');
+		if (!$i.policies.canAttachFiles) { return; }
 		if (droppedData != null) {
 			files.value.push(...droppedData);
 			ev.preventDefault();
@@ -873,6 +919,7 @@ type StoredDrafts = {
 			files: Misskey.entities.DriveFile[];
 			poll: PollEditorModelValue | null;
 			visibleUserIds?: string[];
+			flags: string[];
 			quoteId: string | null;
 			reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
 			scheduledAt: number | null;
@@ -896,6 +943,7 @@ function saveDraft() {
 			files: files.value,
 			poll: poll.value,
 			...( visibleUsers.value.length > 0 ? { visibleUserIds: visibleUsers.value.map(x => x.id) } : {}),
+			flags: [...flags.value.values()],
 			quoteId: quoteId.value,
 			reactionAcceptance: reactionAcceptance.value,
 			scheduledAt: scheduledAt.value,
@@ -932,6 +980,7 @@ async function saveServerDraft(options: {
 		reactionAcceptance: reactionAcceptance.value,
 		scheduledAt: scheduledAt.value,
 		isActuallyScheduled: options.isActuallyScheduled ?? false,
+		flagIds: [...flags.value.values()],
 	});
 }
 
@@ -983,33 +1032,6 @@ async function post(ev?: PointerEvent) {
 
 	if (props.mock) return;
 
-	if (visibility.value === 'public' && (
-		(useCw.value && cw.value != null && cw.value.trim() !== '' && isAnnoying(cw.value)) || // CWが迷惑になる場合
-		((!useCw.value || cw.value == null || cw.value.trim() === '') && text.value != null && text.value.trim() !== '' && isAnnoying(text.value)) // CWが無い かつ 本文が迷惑になる場合
-	)) {
-		const { canceled, result } = await os.actions({
-			type: 'warning',
-			text: i18n.ts.thisPostMayBeAnnoying,
-			actions: [{
-				value: 'home',
-				text: i18n.ts.thisPostMayBeAnnoyingHome,
-				primary: true,
-			}, {
-				value: 'cancel',
-				text: i18n.ts.thisPostMayBeAnnoyingCancel,
-			}, {
-				value: 'ignore',
-				text: i18n.ts.thisPostMayBeAnnoyingIgnore,
-			}],
-		});
-
-		if (canceled) return;
-		if (result === 'cancel') return;
-		if (result === 'home') {
-			visibility.value = 'home';
-		}
-	}
-
 	if (uploader.items.value.some(x => x.uploaded == null)) {
 		await uploadFiles();
 
@@ -1021,16 +1043,17 @@ async function post(ev?: PointerEvent) {
 
 	let postData = {
 		text: text.value === '' ? null : text.value,
-		fileIds: files.value.length > 0 ? files.value.map(f => f.id) : undefined,
+		fileIds: files.value.length > 0 && $i.policies.canAttachFiles ? files.value.map(f => f.id) : undefined,
 		replyId: replyTargetNote.value ? replyTargetNote.value.id : undefined,
 		renoteId: renoteTargetNote.value ? renoteTargetNote.value.id : quoteId.value ? quoteId.value : undefined,
 		channelId: targetChannel.value ? targetChannel.value.id : undefined,
 		poll: poll.value,
 		cw: useCw.value ? cw.value ?? '' : null,
-		localOnly: visibility.value === 'specified' ? false : localOnly.value,
+		localOnly: localOnly.value || !$i.policies.canFederateNote,
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
+		flagIds: [...flags.value.values()],
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {
@@ -1290,6 +1313,7 @@ async function openAccountMenu(ev: PointerEvent) {
 				reactionAcceptance.value = draft.reactionAcceptance;
 				scheduledAt.value = draft.scheduledAt ?? null;
 				if (draft.channel) targetChannel.value = draft.channel as unknown as Misskey.entities.Channel;
+				flags.value = new Set(draft.flagIds);
 
 				visibleUsers.value = [];
 				draft.visibleUserIds?.forEach(uid => {
@@ -1438,6 +1462,7 @@ onMounted(() => {
 				}
 				quoteId.value = draft.data.quoteId;
 				reactionAcceptance.value = draft.data.reactionAcceptance;
+				flags.value = new Set(draft.data.flags);
 				scheduledAt.value = draft.data.scheduledAt ?? null;
 			}
 		}
@@ -1466,6 +1491,7 @@ onMounted(() => {
 			}
 			quoteId.value = renoteTargetNote.value ? renoteTargetNote.value.id : null;
 			reactionAcceptance.value = init.reactionAcceptance;
+			flags.value = new Set((init.flags ? init.flags.filter(f => 'target' in f ? f.target === 'manual' : f.canAssignByUser) : []).map(f => f.id));
 		}
 
 		nextTick(() => watchForDraft());
@@ -1653,11 +1679,19 @@ defineExpose({
 	background-size: auto auto;
 }
 
-html[data-color-scheme=dark] .preview {
+.plainPreview {
+	background-image: transparent;
+}
+
+.darkenPreview {
+	background-color: var(--MI_THEME-shadow);
+}
+
+html[data-color-scheme=dark] .obliqueStripedPreview {
 	background-image: repeating-linear-gradient(135deg, transparent, transparent 5px, #0004 5px, #0004 10px);
 }
 
-html[data-color-scheme=light] .preview {
+html[data-color-scheme=light] .obliqueStripedPreview {
 	background-image: repeating-linear-gradient(135deg, transparent, transparent 5px, #00000005 5px, #00000005 10px);
 }
 
@@ -1690,7 +1724,7 @@ html[data-color-scheme=light] .preview {
 	background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
 }
 
-.hasNotSpecifiedMentions {
+.noteWarnings {
 	margin: 0 20px 16px 20px;
 }
 
@@ -1777,6 +1811,11 @@ html[data-color-scheme=light] .preview {
 	min-height: 90px;
 	max-height: 500px;
 	field-sizing: content;
+}
+
+.textCountLegacy {
+	opacity: 0.7;
+	line-height: 66px;
 }
 
 .textCount {

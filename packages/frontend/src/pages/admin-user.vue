@@ -13,6 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span class="name"><MkUserName class="name" :user="user"/></span>
 					<span class="sub"><span class="acct _monospace">@{{ acct(user) }}</span></span>
 					<span class="state">
+						<span v-if="info && info.usernameEntropy" class="entropy">Entropy: {{ info.usernameEntropy ? info.usernameEntropy.toFixed(2) : '---' }} bit</span>
 						<span v-if="suspended" class="suspended">Suspended</span>
 						<span v-if="silenced" class="silenced">Silenced</span>
 						<span v-if="moderator" class="moderator">Moderator</span>
@@ -621,12 +622,17 @@ definePage(() => ({
 				display: none;
 			}
 
-			> .suspended, > .silenced, > .moderator {
+			> .entropy, > .suspended, > .silenced, > .moderator {
 				display: inline-block;
 				border: solid 1px;
 				border-radius: 6px;
 				padding: 2px 6px;
 				font-size: 85%;
+			}
+
+			> .entropy {
+				color: var(--MI_THEME-fgTransparent);
+				border-color: var(--MI_THEME-fgTransparent);
 			}
 
 			> .suspended {

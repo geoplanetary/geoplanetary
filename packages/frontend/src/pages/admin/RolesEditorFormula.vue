@@ -49,11 +49,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #suffix>sec</template>
 	</MkInput>
 
-	<MkInput v-else-if="v.type === 'followersLessThanOrEq' || v.type === 'followersMoreThanOrEq' || v.type === 'followingLessThanOrEq' || v.type === 'followingMoreThanOrEq' || v.type === 'notesLessThanOrEq' || v.type === 'notesMoreThanOrEq'" v-model="v.value" type="number">
+	<MkInput v-else-if="v.type === 'loggedInMoreThanOrEq' || v.type === 'loggedInLessThanOrEq'" v-model="v.day" type="number">
+		<template #suffix>day</template>
+	</MkInput>
+
+	<MkInput v-else-if="v.type === 'usernameEntropyMoreThanOrEq' || v.type ==='usernameEntropyLessThanOrEq' || v.type ==='usernameEntropyMeanMoreThanOrEq' || v.type ==='usernameEntropyMeanLessThanOrEq'" v-model="v.value" :min="0" :step="0.1" type="number">
+		<template #suffix>bit</template>
+	</MkInput>
+
+	<MkInput v-else-if="v.type === 'followersLessThanOrEq' || v.type === 'followersMoreThanOrEq' || v.type === 'followingLessThanOrEq' || v.type === 'followingMoreThanOrEq' || v.type === 'notesLessThanOrEq' || v.type === 'notesMoreThanOrEq' || v.type === 'tagCountIs' || v.type === 'tagCountMoreThanOrEq' || v.type === 'tagCountLessThanOrEq' || v.type === 'fieldCountIs' || v.type === 'fieldCountMoreThanOrEq' || v.type === 'fieldCountLessThanOrEq'" v-model="v.value" type="number">
+	</MkInput>
+
+	<MkInput v-else-if="v.type === 'usernameMatchOf' || v.type ==='nameMatchOf' || v.type ==='hostMatchOf' || v.type === 'descriptionMatchOf' || v.type ==='hasTagMatchOf' || v.type ==='emailMatchOf' || v.type ==='hasFieldNameMatchOf' || v.type ==='hasFieldValueMatchOf'" v-model="v.pattern" type="text">
+		<template #caption>{{ i18n.ts._role.patternEditDescription }}</template>
 	</MkInput>
 
 	<MkSelect v-else-if="v.type === 'roleAssignedTo'" v-model="v.roleId" :items="assignedToDef">
 	</MkSelect>
+
+	<div v-else-if="v.type === 'avatarLikelyBlurhash' || v.type === 'bannerLikelyBlurhash'">
+		<MkInput v-model="v.hash" type="text">
+			<template #label>{{ i18n.ts._role.hash }}</template>
+		</MkInput>
+		<MkInput v-model="v.diff" type="number">
+			<template #label>{{ i18n.ts._role.allowDifference }}</template>
+		</MkInput>
+	</div>
 </div>
 </template>
 
@@ -97,20 +118,57 @@ watch(v, () => {
 const typeDef = [
 	{ label: i18n.ts._role._condition.isLocal, value: 'isLocal' },
 	{ label: i18n.ts._role._condition.isRemote, value: 'isRemote' },
+	{ label: i18n.ts._role._condition.isFederated, value: 'isFederated' },
+	{ label: i18n.ts._role._condition.isSubscribing, value: 'isSubscribing' },
+	{ label: i18n.ts._role._condition.isPublishing, value: 'isPublishing' },
+	{ label: i18n.ts._role._condition.isForeign, value: 'isForeign' },
 	{ label: i18n.ts._role._condition.isSuspended, value: 'isSuspended' },
 	{ label: i18n.ts._role._condition.isLocked, value: 'isLocked' },
 	{ label: i18n.ts._role._condition.isBot, value: 'isBot' },
 	{ label: i18n.ts._role._condition.isCat, value: 'isCat' },
 	{ label: i18n.ts._role._condition.isExplorable, value: 'isExplorable' },
+	{ label: i18n.ts._role._condition.isMfaEnabled, value: 'isMfaEnabled' },
+	{ label: i18n.ts._role._condition.isSecurityKeyAvailable, value: 'isSecurityKeyAvailable' },
+	{ label: i18n.ts._role._condition.isUsingPwlessLogin, value: 'isUsingPwlessLogin' },
+	{ label: i18n.ts._role._condition.isNoCrawle, value: 'isNoCrawle' },
+	{ label: i18n.ts._role._condition.isNoAI, value: 'isNoAI' },
 	{ label: i18n.ts._role._condition.roleAssignedTo, value: 'roleAssignedTo' },
+	{ label: i18n.ts._role._condition.usernameMatchOf, value: 'usernameMatchOf' },
+	{ label: i18n.ts._role._condition.usernameEntropyMoreThanOrEq, value: 'usernameEntropyMoreThanOrEq' },
+	{ label: i18n.ts._role._condition.usernameEntropyLessThanOrEq, value: 'usernameEntropyLessThanOrEq' },
+	{ label: i18n.ts._role._condition.usernameEntropyMeanMoreThanOrEq, value: 'usernameEntropyMeanMoreThanOrEq' },
+	{ label: i18n.ts._role._condition.usernameEntropyMeanLessThanOrEq, value: 'usernameEntropyMeanLessThanOrEq' },
+	{ label: i18n.ts._role._condition.nameMatchOf, value: 'nameMatchOf' },
+	{ label: i18n.ts._role._condition.hostMatchOf, value: 'hostMatchOf' },
+	{ label: i18n.ts._role._condition.nameIsDefault, value: 'nameIsDefault' },
+	{ label: i18n.ts._role._condition.emailVerified, value: 'emailVerified' },
+	{ label: i18n.ts._role._condition.emailMatchOf, value: 'emailMatchOf' },
 	{ label: i18n.ts._role._condition.createdLessThan, value: 'createdLessThan' },
 	{ label: i18n.ts._role._condition.createdMoreThan, value: 'createdMoreThan' },
+	{ label: i18n.ts._role._condition.loggedInLessThanOrEq, value: 'loggedInLessThanOrEq' },
+	{ label: i18n.ts._role._condition.loggedInMoreThanOrEq, value: 'loggedInMoreThanOrEq' },
 	{ label: i18n.ts._role._condition.followersLessThanOrEq, value: 'followersLessThanOrEq' },
 	{ label: i18n.ts._role._condition.followersMoreThanOrEq, value: 'followersMoreThanOrEq' },
 	{ label: i18n.ts._role._condition.followingLessThanOrEq, value: 'followingLessThanOrEq' },
 	{ label: i18n.ts._role._condition.followingMoreThanOrEq, value: 'followingMoreThanOrEq' },
 	{ label: i18n.ts._role._condition.notesLessThanOrEq, value: 'notesLessThanOrEq' },
 	{ label: i18n.ts._role._condition.notesMoreThanOrEq, value: 'notesMoreThanOrEq' },
+	{ label: i18n.ts._role._condition.avatarUnset, value: 'avatarUnset' },
+	{ label: i18n.ts._role._condition.avatarLikelyBlurhash, value: 'avatarLikelyBlurhash' },
+	{ label: i18n.ts._role._condition.bannerUnset, value: 'bannerUnset' },
+	{ label: i18n.ts._role._condition.bannerLikelyBlurhash, value: 'bannerLikelyBlurhash' },
+	{ label: i18n.ts._role._condition.descriptionMatchOf, value: 'descriptionMatchOf' },
+	{ label: i18n.ts._role._condition.hasTags, value: 'hasTags' },
+	{ label: i18n.ts._role._condition.tagCountIs, value: 'tagCountIs' },
+	{ label: i18n.ts._role._condition.tagCountMoreThanOrEq, value: 'tagCountMoreThanOrEq' },
+	{ label: i18n.ts._role._condition.tagCountLessThanOrEq, value: 'tagCountLessThanOrEq' },
+	{ label: i18n.ts._role._condition.hasTagMatchOf, value: 'hasTagMatchOf' },
+	{ label: i18n.ts._role._condition.hasFields, value: 'hasFields' },
+	{ label: i18n.ts._role._condition.fieldCountIs, value: 'fieldCountIs' },
+	{ label: i18n.ts._role._condition.fieldCountMoreThanOrEq, value: 'fieldCountMoreThanOrEq' },
+	{ label: i18n.ts._role._condition.fieldCountLessThanOrEq, value: 'fieldCountLessThanOrEq' },
+	{ label: i18n.ts._role._condition.hasFieldNameMatchOf, value: 'hasFieldNameMatchOf' },
+	{ label: i18n.ts._role._condition.hasFieldValueMatchOf, value: 'hasFieldValueMatchOf' },
 	{ label: i18n.ts._role._condition.and, value: 'and' },
 	{ label: i18n.ts._role._condition.or, value: 'or' },
 	{ label: i18n.ts._role._condition.not, value: 'not' },
@@ -131,14 +189,36 @@ const typeModelForMkSelect = computed<GetMkSelectValueTypesFromDef<typeof typeDe
 			case 'or': newValue = { type: 'or', values: [] }; break;
 			case 'not': newValue = { type: 'not', value: { id: genId(), type: 'isRemote' } }; break;
 			case 'roleAssignedTo': newValue = { type: 'roleAssignedTo', roleId: '' }; break;
+			case 'usernameMatchOf': newValue = { type: 'usernameMatchOf', pattern: '' }; break;
+			case 'usernameEntropyMoreThanOrEq': newValue = { type: 'usernameEntropyMoreThanOrEq', value: 47 }; break;
+			case 'usernameEntropyLessThanOrEq': newValue = { type: 'usernameEntropyLessThanOrEq', value: 47 }; break;
+			case 'usernameEntropyMeanMoreThanOrEq': newValue = { type: 'usernameEntropyMeanMoreThanOrEq', value: 4.7 }; break;
+			case 'usernameEntropyMeanLessThanOrEq': newValue = { type: 'usernameEntropyMeanLessThanOrEq', value: 4.7 }; break;
+			case 'nameMatchOf': newValue = { type: 'nameMatchOf', pattern: '' }; break;
+			case 'hostMatchOf': newValue = { type: 'hostMatchOf', pattern: '' }; break;
+			case 'emailMatchOf': newValue = { type: 'emailMatchOf', pattern: '' }; break;
 			case 'createdLessThan': newValue = { type: 'createdLessThan', sec: 86400 }; break;
 			case 'createdMoreThan': newValue = { type: 'createdMoreThan', sec: 86400 }; break;
+			case 'loggedInMoreThanOrEq': newValue = { type: 'loggedInMoreThanOrEq', day: 10 }; break;
+			case 'loggedInLessThanOrEq': newValue = { type: 'loggedInLessThanOrEq', day: 10 }; break;
 			case 'followersLessThanOrEq': newValue = { type: 'followersLessThanOrEq', value: 10 }; break;
 			case 'followersMoreThanOrEq': newValue = { type: 'followersMoreThanOrEq', value: 10 }; break;
 			case 'followingLessThanOrEq': newValue = { type: 'followingLessThanOrEq', value: 10 }; break;
 			case 'followingMoreThanOrEq': newValue = { type: 'followingMoreThanOrEq', value: 10 }; break;
 			case 'notesLessThanOrEq': newValue = { type: 'notesLessThanOrEq', value: 10 }; break;
 			case 'notesMoreThanOrEq': newValue = { type: 'notesMoreThanOrEq', value: 10 }; break;
+			case 'avatarLikelyBlurhash': newValue = { type: 'avatarLikelyBlurhash', hash: '', diff: 0 }; break;
+			case 'bannerLikelyBlurhash': newValue = { type: 'bannerLikelyBlurhash', hash: '', diff: 0 }; break;
+			case 'descriptionMatchOf': newValue = { type: 'descriptionMatchOf', pattern: '' }; break;
+			case 'tagCountIs': newValue = { type: 'tagCountIs', value: 10 }; break;
+			case 'tagCountMoreThanOrEq': newValue = { type: 'tagCountMoreThanOrEq', value: 10 }; break;
+			case 'tagCountLessThanOrEq': newValue = { type: 'tagCountLessThanOrEq', value: 10 }; break;
+			case 'hasTagMatchOf': newValue = { type: 'hasTagMatchOf', pattern: '' }; break;
+			case 'fieldCountIs': newValue = { type: 'fieldCountIs', value: 10 }; break;
+			case 'fieldCountMoreThanOrEq': newValue = { type: 'fieldCountMoreThanOrEq', value: 10 }; break;
+			case 'fieldCountLessThanOrEq': newValue = { type: 'fieldCountLessThanOrEq', value: 10 }; break;
+			case 'hasFieldNameMatchOf': newValue = { type: 'hasFieldNameMatchOf', pattern: '' }; break;
+			case 'hasFieldValueMatchOf': newValue = { type: 'hasFieldValueMatchOf', pattern: '' }; break;
 			default: newValue = { type: t }; break;
 		}
 		v.value = { id: v.value.id, ...newValue };

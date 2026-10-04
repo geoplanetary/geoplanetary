@@ -9,6 +9,7 @@ import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { DI } from '@/di-symbols.js';
 import { MiMeta } from '@/models/Meta.js';
+import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -59,6 +60,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private noteEntityService: NoteEntityService,
 		private getterService: GetterService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const note = await this.getterService.getNoteWithRelations(ps.noteId).catch(err => {
@@ -66,7 +68,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw err;
 			});
 
-			if (note.user!.requireSigninToViewContents && me == null) {
+			const policies = await this.roleService.getUserPolicies(note.userId);
+			if (policies.requireSigninToViewContents === 'force-enable' && me == null) {
+				throw new ApiError(meta.errors.contentRestrictedByServer);
+			}
+
+			if (policies.requireSigninToViewContents === 'leave' && note.user!.requireSigninToViewContents && me == null) {
 				throw new ApiError(meta.errors.contentRestrictedByUser);
 			}
 

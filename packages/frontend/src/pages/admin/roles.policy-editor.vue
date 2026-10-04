@@ -7,9 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_gaps_s">
 		<XFolder v-if="matchQuery([i18n.ts._role._options.rateLimitFactor, 'rateLimitFactor'])" v-model:policyMeta="policyMetaModel.rateLimitFactor" :isBaseRole="isBaseRole" :readonly="readonly">
 			<template #label>{{ i18n.ts._role._options.rateLimitFactor }}</template>
-			<template #valueText>{{ Math.floor(valuesModel.rateLimitFactor * 100) }}%</template>
+			<template #valueText>{{ Math.round(valuesModel.rateLimitFactor * 100) }}%</template>
 			<template #default="{ disabled }">
-				<MkRange v-model="valuesModel.rateLimitFactor" :disabled="disabled" :min="0.3" :max="3" :step="0.1" :textConverter="(v) => `${Math.round(v * 100)}%`">
+				<MkSwitch :modelValue="valuesModel.rateLimitFactor == 0" :disabled="disabled" @update:modelValue="v => { valuesModel.rateLimitFactor = v ? 0 : instance.policies.rateLimitFactor }">
+					<template #label>{{ i18n.ts._role._options.rateLimitFactor }} 0%</template>
+				</MkSwitch>
+				<MkRange :modelValue="Math.round(Math.log2(valuesModel.rateLimitFactor) * 4)" :disabled="disabled" :min="-20" :max="20" :step="1" :textConverter="(v) => `${Math.round(Math.pow(2, v / 4) * 100)}%`" @update:modelValue="v => valuesModel.rateLimitFactor = Math.pow(2, v / 4)">
 					<template #caption>{{ i18n.ts._role._options.descriptionOfRateLimitFactor }}</template>
 				</MkRange>
 			</template>
@@ -35,11 +38,80 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 		</XFolder>
 
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canPostNote, 'canPostNote'])" v-model:policyMeta="policyMetaModel.canPostNote" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canPostNote }}</template>
+			<template #valueText>{{ valuesModel.canPostNote ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canPostNote" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.noteLengthLimit, 'noteLengthLimit'])" v-model:policyMeta="policyMetaModel.noteLengthLimit" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.noteLengthLimit }}</template>
+			<template #valueText>{{ valuesModel.noteLengthLimit }}</template>
+			<template #default="{ disabled }">
+				<MkInput v-model="valuesModel.noteLengthLimit" type="number" :disabled="disabled">
+				</MkInput>
+			</template>
+		</XFolder>
+
 		<XFolder v-if="matchQuery([i18n.ts._role._options.canPublicNote, 'canPublicNote'])" v-model:policyMeta="policyMetaModel.canPublicNote" :isBaseRole="isBaseRole" :readonly="readonly">
 			<template #label>{{ i18n.ts._role._options.canPublicNote }}</template>
 			<template #valueText>{{ valuesModel.canPublicNote ? i18n.ts.yes : i18n.ts.no }}</template>
 			<template #default="{ disabled }">
 				<MkSwitch v-model="valuesModel.canPublicNote" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canReply, 'canReply'])" v-model:policyMeta="policyMetaModel.canReply" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canReply }}</template>
+			<template #valueText>{{ valuesModel.canReply ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canReply" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canQuote, 'canQuote'])" v-model:policyMeta="policyMetaModel.canQuote" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canQuote }}</template>
+			<template #valueText>{{ valuesModel.canQuote ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canQuote" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canDirectMessage, 'canDirectMessage'])" v-model:policyMeta="policyMetaModel.canDirectMessage" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canDirectMessage }}</template>
+			<template #valueText>{{ valuesModel.canDirectMessage ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canDirectMessage" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canFederateNote, 'canFederateNote'])" v-model:policyMeta="policyMetaModel.canFederateNote" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canFederateNote }}</template>
+			<template #valueText>{{ valuesModel.canFederateNote ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canFederateNote" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canAttachFiles, 'canAttachFiles'])" v-model:policyMeta="policyMetaModel.canAttachFiles" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canAttachFiles }}</template>
+			<template #valueText>{{ valuesModel.canAttachFiles ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canAttachFiles" :disabled="disabled">
 					<template #label>{{ i18n.ts.enable }}</template>
 				</MkSwitch>
 			</template>
@@ -171,6 +243,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 		</XFolder>
 
+		<XFolder v-if="matchQuery([i18n.ts._role._options.driveWritable, 'driveWritable'])" v-model:policyMeta="policyMetaModel.driveWritable" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.driveWritable }}</template>
+			<template #valueText>{{ valuesModel.driveWritable ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.driveWritable" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
 		<XFolder v-if="matchQuery([i18n.ts._role._options.driveCapacity, 'driveCapacityMb'])" v-model:policyMeta="policyMetaModel.driveCapacityMb" :isBaseRole="isBaseRole" :readonly="readonly">
 			<template #label>{{ i18n.ts._role._options.driveCapacity }}</template>
 			<template #valueText>{{ valuesModel.driveCapacityMb }}MB</template>
@@ -265,6 +347,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 		</XFolder>
 
+		<XFolder v-if="matchQuery([i18n.ts._role._options.clipAvailable, 'clipAvailable'])" v-model:policyMeta="policyMetaModel.clipAvailable" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.clipAvailable }}</template>
+			<template #valueText>{{ valuesModel.clipAvailable ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.clipAvailable" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
 		<XFolder v-if="matchQuery([i18n.ts._role._options.clipMax, 'clipLimit'])" v-model:policyMeta="policyMetaModel.clipLimit" :isBaseRole="isBaseRole" :readonly="readonly">
 			<template #label>{{ i18n.ts._role._options.clipMax }}</template>
 			<template #valueText>{{ valuesModel.clipLimit }}</template>
@@ -280,6 +372,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #default="{ disabled }">
 				<MkInput v-model="valuesModel.noteEachClipsLimit" type="number" :disabled="disabled">
 				</MkInput>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.userListAvailable, 'userListAvailable'])" v-model:policyMeta="policyMetaModel.userListAvailable" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.userListAvailable }}</template>
+			<template #valueText>{{ valuesModel.userListAvailable ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.userListAvailable" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
 			</template>
 		</XFolder>
 
@@ -317,6 +419,43 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #default="{ disabled }">
 				<MkInput v-model="avatarDecorationLimit" type="number" :disabled="disabled" :min="0" :max="16" @update:modelValue="updateAvatarDecorationLimit">
 				</MkInput>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canFollowing, 'canFollowing'])" v-model:policyMeta="policyMetaModel.canFollowing" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canFollowing }}</template>
+			<template #valueText>{{ valuesModel.canFollowing ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canFollowing" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canFollowedFromOthers, 'canFollowedFromOthers'])" v-model:policyMeta="policyMetaModel.canFollowedFromOthers" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canFollowedFromOthers }}</template>
+			<template #valueText>{{ valuesModel.canFollowedFromOthers ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canFollowedFromOthers" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.requireSigninToViewContents, 'requireSigninToViewContents'])" v-model:policyMeta="policyMetaModel.requireSigninToViewContents" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.requireSigninToViewContents }}</template>
+			<template #valueText>{{ valuesModel.requireSigninToViewContents === 'force-enable' ?
+				i18n.ts._role._forcingOption.forceEnable : valuesModel.requireSigninToViewContents === 'force-disable' ?
+					i18n.ts._role._forcingOption.forceDisable : i18n.ts._role._forcingOption.leave }}</template>
+			<template #default="{ disabled }">
+				<MkSelect
+					v-model="valuesModel.requireSigninToViewContents" :disabled="disabled" :items="[
+						{ label: i18n.ts._role._forcingOption.leave, value: 'leave' },
+						{ label: i18n.ts._role._forcingOption.forceEnable, value: 'force-enable' },
+						{ label: i18n.ts._role._forcingOption.forceDisable, value: 'force-disable' },
+					]"
+				>
+				</MkSelect>
 			</template>
 		</XFolder>
 

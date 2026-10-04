@@ -4,15 +4,17 @@
  */
 
 import { Inject, Injectable, Scope } from '@nestjs/common';
+import { REQUEST } from '@nestjs/core';
 import { normalizeForSearch } from '@/misc/normalize-for-search.js';
 import type { Packed } from '@/misc/json-schema.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
-import { NoteStreamingHidingService } from '../NoteStreamingHidingService.js';
 import { bindThis } from '@/decorators.js';
 import { isRenotePacked, isQuotePacked } from '@/misc/is-renote.js';
 import type { JsonObject } from '@/misc/json-value.js';
+import { RoleService } from '@/core/RoleService.js';
+import { NoteModerationService } from '@/core/NoteModerationService.js';
 import Channel, { type ChannelRequest } from '../channel.js';
-import { REQUEST } from '@nestjs/core';
+import { NoteStreamingHidingService } from '../NoteStreamingHidingService.js';
 @Injectable({ scope: Scope.TRANSIENT })
 export class HashtagChannel extends Channel {
 	public readonly chName = 'hashtag';
@@ -26,6 +28,8 @@ export class HashtagChannel extends Channel {
 
 		private noteEntityService: NoteEntityService,
 		private noteStreamingHidingService: NoteStreamingHidingService,
+		private roleService: RoleService,
+		private noteModerationService: NoteModerationService,
 	) {
 		super(request);
 		//this.onNote = this.onNote.bind(this);
@@ -54,9 +58,20 @@ export class HashtagChannel extends Channel {
 		if (!matched) return;
 
 		if (!this.isNoteVisibleForMe(note)) return;
-		if (note.user.requireSigninToViewContents && this.user == null) return;
-		if (note.renote && note.renote.user.requireSigninToViewContents && this.user == null) return;
-		if (note.reply && note.reply.user.requireSigninToViewContents && this.user == null) return;
+		const [noteUserPolicies, renoteUserPolicies, replyUserPolicies, notePolicies] = await Promise.all([
+			await this.roleService.getUserPolicies(note.userId),
+			note.renote ? await this.roleService.getUserPolicies(note.renote.userId) : undefined,
+			note.reply ? await this.roleService.getUserPolicies(note.reply.userId) : undefined,
+			await this.noteModerationService.getNotePolicies(note.id),
+		]);
+		const iMMod = this.user != null && this.roleService.isModerator(this.user);
+		if (noteUserPolicies.requireSigninToViewContents === 'force-enable' && this.user == null) return;
+		if (renoteUserPolicies?.requireSigninToViewContents === 'force-enable' && this.user == null) return;
+		if (replyUserPolicies?.requireSigninToViewContents === 'force-enable' && this.user == null) return;
+		if (noteUserPolicies.requireSigninToViewContents === 'leave' && note.user.requireSigninToViewContents && this.user == null) return;
+		if (renoteUserPolicies?.requireSigninToViewContents === 'leave' && note.renote && note.renote.user.requireSigninToViewContents && this.user == null) return;
+		if (replyUserPolicies?.requireSigninToViewContents === 'leave' && note.reply && note.reply.user.requireSigninToViewContents && this.user == null) return;
+		if (notePolicies.masked && (note.userId !== this.user?.id || !iMMod)) return;
 		if (this.isNoteMutedOrBlocked(note)) return;
 
 		const filtered = await this.noteStreamingHidingService.filter(note, this.user?.id ?? null);

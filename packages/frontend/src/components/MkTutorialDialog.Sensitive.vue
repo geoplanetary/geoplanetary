@@ -85,6 +85,11 @@ const exampleNote = reactive<Misskey.entities.Note>({
 	}],
 	replyId: null,
 	renoteId: null,
+	policies: {
+		masked: false,
+		enableQuote: true,
+		enableReply: true,
+	},
 });
 
 </script>

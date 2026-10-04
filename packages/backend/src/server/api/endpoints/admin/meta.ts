@@ -9,6 +9,7 @@ import { MetaService } from '@/core/MetaService.js';
 import type { Config } from '@/config.js';
 import { DI } from '@/di-symbols.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
+import * as noteflagModel from '@/models/NoteFlag.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
 
 export const meta = {
@@ -189,7 +190,20 @@ export const meta = {
 					type: 'string',
 				},
 			},
+			prohibitedNotePattern: {
+				type: 'object',
+				optional: false, nullable: true,
+				ref: 'ProhibitedNoteFormulaValue',
+			},
 			bannedEmailDomains: {
+				type: 'array',
+				optional: true, nullable: false,
+				items: {
+					type: 'string',
+					optional: false, nullable: false,
+				},
+			},
+			bannedEmails: {
 				type: 'array',
 				optional: true, nullable: false,
 				items: {
@@ -203,6 +217,10 @@ export const meta = {
 				items: {
 					type: 'string',
 				},
+			},
+			usernameEntropyTable: {
+				type: 'object',
+				optional: false, nullable: true,
 			},
 			hcaptchaSecretKey: {
 				type: 'string',
@@ -390,6 +408,11 @@ export const meta = {
 			policies: {
 				type: 'object',
 				optional: false, nullable: false,
+			},
+			notePolicies: {
+				type: 'object',
+				optional: false, nullable: false,
+				ref: 'NotePolicies',
 			},
 			enableFanoutTimeline: {
 				type: 'boolean',
@@ -701,7 +724,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				sensitiveWords: instance.sensitiveWords,
 				prohibitedWords: instance.prohibitedWords,
 				prohibitedWordsForNameOfUser: instance.prohibitedWordsForNameOfUser,
+				prohibitedNotePattern: instance.prohibitedNotePattern.type ? instance.prohibitedNotePattern : null,
 				preservedUsernames: instance.preservedUsernames,
+				usernameEntropyTable: instance.usernameEntropyTable,
 				hcaptchaSecretKey: instance.hcaptchaSecretKey,
 				mcaptchaSecretKey: instance.mcaptchaSecretKey,
 				recaptchaSecretKey: instance.recaptchaSecretKey,
@@ -750,7 +775,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				enableServerMachineStats: instance.enableServerMachineStats,
 				enableIdenticonGeneration: instance.enableIdenticonGeneration,
 				bannedEmailDomains: instance.bannedEmailDomains,
+				bannedEmails: instance.bannedEmails,
 				policies: { ...DEFAULT_POLICIES, ...instance.policies },
+				notePolicies: { ...noteflagModel.DEFAULT_POLICIES, ...instance.notePolicies },
 				manifestJsonOverride: instance.manifestJsonOverride,
 				enableFanoutTimeline: instance.enableFanoutTimeline,
 				enableFanoutTimelineDbFallback: instance.enableFanoutTimelineDbFallback,

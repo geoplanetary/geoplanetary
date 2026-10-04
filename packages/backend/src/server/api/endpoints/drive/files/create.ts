@@ -18,6 +18,7 @@ export const meta = {
 	tags: ['drive'],
 
 	requireCredential: true,
+	requireRolePolicy: 'driveWritable',
 
 	prohibitMoved: true,
 

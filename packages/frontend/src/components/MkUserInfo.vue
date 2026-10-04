@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<p :class="$style.statusItemLabel">{{ i18n.ts.followers }}</p><span :class="$style.statusItemValue">{{ number(user.followersCount) }}</span>
 		</MkA>
 	</div>
-	<MkFollowButton v-if="user.id != $i?.id" :class="$style.follow" :user="user" mini/>
+	<MkFollowButton v-if="isFollowEnabled(user)" :class="$style.follow" :user="user" mini/>
 </div>
 </template>
 
@@ -43,6 +43,7 @@ import { userPage } from '@/filters/user.js';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/utility/isFfVisibleForMe.js';
+import { isFollowEnabled } from '@/utility/is-follow-enabled.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
 import { prefer } from '@/preferences.js';
 

@@ -353,7 +353,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (typeof ps.autoAcceptFollowed === 'boolean') profileUpdates.autoAcceptFollowed = ps.autoAcceptFollowed;
 			if (typeof ps.noCrawle === 'boolean') profileUpdates.noCrawle = ps.noCrawle;
 			if (typeof ps.preventAiLearning === 'boolean') profileUpdates.preventAiLearning = ps.preventAiLearning;
-			if (typeof ps.requireSigninToViewContents === 'boolean') updates.requireSigninToViewContents = ps.requireSigninToViewContents;
+			if (typeof ps.requireSigninToViewContents === 'boolean') {
+				policies ??= await this.roleService.getUserPolicies(user.id);
+				if (policies.requireSigninToViewContents === 'force-enable') updates.requireSigninToViewContents = true;
+				else if (policies.requireSigninToViewContents === 'force-disable') updates.requireSigninToViewContents = false;
+				else updates.requireSigninToViewContents = ps.requireSigninToViewContents;
+			}
 			if ((typeof ps.makeNotesFollowersOnlyBefore === 'number') || (ps.makeNotesFollowersOnlyBefore === null)) updates.makeNotesFollowersOnlyBefore = ps.makeNotesFollowersOnlyBefore;
 			if ((typeof ps.makeNotesHiddenBefore === 'number') || (ps.makeNotesHiddenBefore === null)) updates.makeNotesHiddenBefore = ps.makeNotesHiddenBefore;
 			if (typeof ps.isCat === 'boolean') updates.isCat = ps.isCat;

@@ -180,7 +180,7 @@ export class MiUserProfile {
 	public noCrawle: boolean;
 
 	@Column('boolean', {
-		default: true,
+		default: false,
 	})
 	public preventAiLearning: boolean;
 
@@ -372,6 +372,7 @@ export const ACHIEVEMENT_TYPES = [
 	'cookieClicked',
 	'brainDiver',
 	'smashTestNotificationButton',
+	'mfaEnabled',
 	'tutorialCompleted',
 	'bubbleGameExplodingHead',
 	'bubbleGameDoubleExplodingHead',

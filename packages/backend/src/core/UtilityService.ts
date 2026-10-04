@@ -13,6 +13,8 @@ import { bindThis } from '@/decorators.js';
 import { MiMeta, SoftwareSuspension } from '@/models/Meta.js';
 import { MiInstance } from '@/models/Instance.js';
 
+export type MatchExprType = 'identical' | 'included';
+
 @Injectable()
 export class UtilityService {
 	constructor(
@@ -99,6 +101,39 @@ export class UtilityService {
 				// TODO: RE2インスタンスをキャッシュ
 				return new RE2(regexp[1], regexp[2]).test(text);
 			} catch (_) {
+				// This should never happen due to input sanitisation.
+				return false;
+			}
+		});
+
+		return matched;
+	}
+
+	@bindThis
+	public isMatchKeywords(text: string, keyWords: string[], defaultmatcher: MatchExprType = 'identical'): boolean {
+		if (keyWords.length === 0) return false;
+		if (text === '') return false;
+
+		const regexpregexp = /^\/(.+)\/([^\s\/]*)$/;
+
+		const matched = keyWords.some(filter => {
+			// represents RegExp
+			const regexp = filter.match(regexpregexp);
+			try {
+				if (regexp) {
+					// TODO: RE2インスタンスをキャッシュ
+					return new RE2(regexp[1], regexp[2]).test(text);
+					// This should never happen due to input sanitisation.
+				}
+				switch (defaultmatcher) {
+					case 'identical': {
+						return text === filter;
+					}
+					case 'included': {
+						return filter.split(' ').every(keyword => text.includes(keyword));
+					}
+				}
+			} catch (err) {
 				// This should never happen due to input sanitisation.
 				return false;
 			}

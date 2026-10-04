@@ -22,7 +22,7 @@ import { isInstanceMuted } from '@/misc/is-instance-muted.js';
 import { ChannelMutingService } from '@/core/ChannelMutingService.js';
 import { isChannelRelated } from '@/misc/is-channel-related.js';
 
-type NoteFilter = (note: MiNote) => boolean;
+type NoteFilter = ((note: MiNote) => Promise<boolean> | boolean);
 
 type TimelineOptions = {
 	untilId: string | null,
@@ -225,7 +225,11 @@ export class FanoutTimelineEndpointService {
 			.leftJoinAndSelect('renote.user', 'renoteUser')
 			.leftJoinAndSelect('note.channel', 'channel');
 
-		const notes = (await query.getMany()).filter(noteFilter);
+		const applyFilter = async (notes: MiNote[], filter: NoteFilter): Promise<MiNote[]> => {
+			const mapped = await Promise.all(notes.map(async (v): Promise<[MiNote, boolean]> => [v, await filter(v)]));
+			return mapped.filter(v => v[1]).map(v => v[0]);
+		};
+		const notes = await applyFilter(await query.getMany(), noteFilter);
 
 		notes.sort((a, b) => idCompare(a.id, b.id));
 

@@ -48,10 +48,10 @@ import type { AnnouncementService } from '@/core/AnnouncementService.js';
 import type { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { ChatService } from '@/core/ChatService.js';
+import { toArray } from '@/misc/prelude/array.js';
 import type { OnModuleInit } from '@nestjs/common';
 import type { NoteEntityService } from './NoteEntityService.js';
 import type { PageEntityService } from './PageEntityService.js';
-import { toArray } from '@/misc/prelude/array.js';
 
 const Ajv = _Ajv.default;
 const ajv = new Ajv();
@@ -77,6 +77,7 @@ export type UserRelation = {
 	isFollowed: boolean
 	hasPendingFollowRequestFromYou: boolean
 	hasPendingFollowRequestToYou: boolean
+	canFollowedFromOthers: boolean
 	isBlocking: boolean
 	isBlocked: boolean
 	isMuted: boolean
@@ -176,6 +177,7 @@ export class UserEntityService implements OnModuleInit {
 			isBlocked,
 			isMuted,
 			isRenoteMuted,
+			targetPolicy,
 		] = await Promise.all([
 			this.followingsRepository.findOneBy({
 				followerId: me,
@@ -223,6 +225,7 @@ export class UserEntityService implements OnModuleInit {
 					muteeId: target,
 				},
 			}),
+			this.roleService.getUserPolicies(target),
 		]);
 
 		return {
@@ -232,6 +235,7 @@ export class UserEntityService implements OnModuleInit {
 			isFollowed,
 			hasPendingFollowRequestFromYou,
 			hasPendingFollowRequestToYou,
+			canFollowedFromOthers: targetPolicy.canFollowedFromOthers,
 			isBlocking,
 			isBlocked,
 			isMuted,
@@ -250,6 +254,7 @@ export class UserEntityService implements OnModuleInit {
 			blockees,
 			muters,
 			renoteMuters,
+			canFollowedFromOthers,
 		] = await Promise.all([
 			this.followingsRepository.findBy({ followerId: me })
 				.then(f => new Map(f.map(it => [it.followeeId, it]))),
@@ -288,6 +293,7 @@ export class UserEntityService implements OnModuleInit {
 				.where('m.muterId = :me', { me })
 				.getRawMany<{ m_muteeId: string }>()
 				.then(it => it.map(it => it.m_muteeId)),
+			await Promise.all(targets.filter(async i => (await this.roleService.getUserPolicies(i)).canFollowedFromOthers)),
 		]);
 
 		return new Map(
@@ -303,6 +309,7 @@ export class UserEntityService implements OnModuleInit {
 						isFollowed: followees.includes(target),
 						hasPendingFollowRequestFromYou: followersRequests.includes(target),
 						hasPendingFollowRequestToYou: followeesRequests.includes(target),
+						canFollowedFromOthers: canFollowedFromOthers.includes(target),
 						isBlocking: blockers.includes(target),
 						isBlocked: blockees.includes(target),
 						isMuted: muters.includes(target),
@@ -425,6 +432,7 @@ export class UserEntityService implements OnModuleInit {
 		const meId = me ? me.id : null;
 		const isMe = meId === user.id;
 		const iAmModerator = me ? await this.roleService.isModerator(me as MiUser) : false;
+		const policies = await this.roleService.getUserPolicies(user.id);
 
 		const profile = isDetailed
 			? (opts.userProfile ?? await this.userProfilesRepository.findOneByOrFail({ userId: user.id }))
@@ -500,7 +508,7 @@ export class UserEntityService implements OnModuleInit {
 			}))) : [],
 			isBot: user.isBot,
 			isCat: user.isCat,
-			requireSigninToViewContents: user.requireSigninToViewContents === false ? undefined : true,
+			requireSigninToViewContents: policies.requireSigninToViewContents === 'force-enable' ? true : policies.requireSigninToViewContents === 'force-disable' ? false : user.requireSigninToViewContents === false ? undefined : true,
 			makeNotesFollowersOnlyBefore: user.makeNotesFollowersOnlyBefore ?? undefined,
 			makeNotesHiddenBefore: user.makeNotesHiddenBefore ?? undefined,
 			instance: user.host ? this.federatedInstanceService.federatedInstanceCache.fetch(user.host).then(instance => instance ? {
@@ -530,8 +538,8 @@ export class UserEntityService implements OnModuleInit {
 				movedTo: user.movedToUri ? this.apPersonService.resolvePerson(user.movedToUri).then(user => user.id).catch(() => null) : null,
 				alsoKnownAs: user.alsoKnownAs ?
 					Promise.all(toArray(user.alsoKnownAs).map(uri => this.apPersonService.fetchPerson(uri).then(user => user?.id).catch(() => null)))
-				.then(xs => xs.length === 0 ? null : xs.filter(x => x != null))
-				: null,
+						.then(xs => xs.length === 0 ? null : xs.filter(x => x != null))
+					: null,
 				createdAt: this.idService.parse(user.id).date.toISOString(),
 				updatedAt: user.updatedAt ? user.updatedAt.toISOString() : null,
 				lastFetchedAt: user.lastFetchedAt ? user.lastFetchedAt.toISOString() : null,
@@ -643,6 +651,7 @@ export class UserEntityService implements OnModuleInit {
 				isFollowed: relation.isFollowed,
 				hasPendingFollowRequestFromYou: relation.hasPendingFollowRequestFromYou,
 				hasPendingFollowRequestToYou: relation.hasPendingFollowRequestToYou,
+				canFollowedFromOthers: relation.canFollowedFromOthers,
 				isBlocking: relation.isBlocking,
 				isBlocked: relation.isBlocked,
 				isMuted: relation.isMuted,

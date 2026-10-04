@@ -9,6 +9,8 @@ import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
+import { tryToEntropyTable } from '@/misc/string-entropy.js';
+import { ApiError } from '../../error.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -52,6 +54,7 @@ export const paramDef = {
 				type: 'string',
 			},
 		},
+		prohibitedNotePattern: { type: 'object', nullable: true },
 		themeColor: { type: 'string', nullable: true, pattern: '^#[0-9a-fA-F]{6}$' },
 		mascotImageUrl: { type: 'string', nullable: true },
 		bannerUrl: { type: 'string', nullable: true },
@@ -154,7 +157,9 @@ export const paramDef = {
 		enableIdenticonGeneration: { type: 'boolean' },
 		serverRules: { type: 'array', items: { type: 'string' } },
 		bannedEmailDomains: { type: 'array', items: { type: 'string' } },
+		bannedEmails: { type: 'array', items: { type: 'string' } },
 		preservedUsernames: { type: 'array', items: { type: 'string' } },
+		usernameEntropyTable: { type: 'object', nullable: true },
 		manifestJsonOverride: { type: 'string' },
 		enableFanoutTimeline: { type: 'boolean' },
 		enableFanoutTimelineDbFallback: { type: 'boolean' },
@@ -284,6 +289,25 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					lastValue = h;
 					return h !== '' && h !== lv && !set.blockedHosts?.includes(h);
 				});
+			}
+			if (ps.prohibitedNotePattern !== undefined) {
+				set.prohibitedNotePattern = ps.prohibitedNotePattern ?? {};
+			}
+			if (ps.usernameEntropyTable != null) {
+				const table = tryToEntropyTable(ps.usernameEntropyTable);
+				if (table == null) {
+					throw new ApiError({
+						message: 'Invalid param.',
+						code: 'INVALID_PARAM',
+						id: '0b5f1631-7c1a-41a6-b399-cce335f34d85',
+					}, {
+						param: 'usernameEntropyTable',
+						reason: 'cannot cast to EntropyTable',
+					});
+				}
+				set.usernameEntropyTable = table;
+			} else if (ps.usernameEntropyTable !== undefined) {
+				set.usernameEntropyTable = ps.usernameEntropyTable;
 			}
 			if (ps.themeColor !== undefined) {
 				set.themeColor = ps.themeColor;
@@ -708,6 +732,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.bannedEmailDomains !== undefined) {
 				set.bannedEmailDomains = ps.bannedEmailDomains;
+			}
+
+			if (ps.bannedEmails !== undefined) {
+				set.bannedEmails = ps.bannedEmails;
 			}
 
 			if (ps.urlPreviewEnabled !== undefined) {

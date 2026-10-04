@@ -9,6 +9,7 @@ import type { RouteDef } from '@/lib/nirax.js';
 import { $i, iAmModerator } from '@/i.js';
 import MkLoading from '@/pages/_loading_.vue';
 import MkError from '@/pages/_error_.vue';
+import { instance } from '@/instance.js';
 import PageTimeline from '@/pages/timeline.vue';
 
 export const page = (loader: AsyncComponentLoader) => defineAsyncComponent({
@@ -48,10 +49,10 @@ export const ROUTE_DEF = [{
 }, {
 	name: 'list',
 	path: '/list/:listId',
-	component: page(() => import('@/pages/list.vue')),
+	component: ($i ? $i.isAdmin as boolean || $i.policies.userListAvailable : instance.policies.userListAvailable) ? page(() => import('@/pages/list.vue')) : page(() => import('@/pages/not-found.vue')),
 }, {
 	path: '/clips/:clipId',
-	component: page(() => import('@/pages/clip.vue')),
+	component: ($i ? $i.isAdmin as boolean || $i.policies.clipAvailable : instance.policies.clipAvailable) ? page(() => import('@/pages/clip.vue')) : page(() => import('@/pages/not-found.vue')),
 }, {
 	path: '/chat',
 	component: chatPage(() => import('@/pages/chat/home.vue')),
@@ -447,6 +448,22 @@ export const ROUTE_DEF = [{
 		name: 'roles',
 		component: page(() => import('@/pages/admin/roles.vue')),
 	}, {
+		path: '/note-flag/new',
+		name: 'note-flag',
+		component: page(() => import('@/pages/admin/note-flags.edit.page.vue')),
+	}, {
+		path: '/note-flag/:id/edit',
+		name: 'note-flag',
+		component: page(() => import('@/pages/admin/note-flags.edit.page.vue')),
+	}, {
+		path: '/note-flag/:id',
+		name: 'note-flag',
+		component: page(() => import('@/pages/admin/note-flags.flag.page.vue')),
+	}, {
+		path: '/note-flags',
+		name: 'note-flags',
+		component: page(() => import('@/pages/admin/note-flags.page.vue')),
+	}, {
 		path: '/database',
 		name: 'database',
 		component: page(() => import('@/pages/admin/database.vue')),
@@ -540,15 +557,15 @@ export const ROUTE_DEF = [{
 	loginRequired: true,
 }, {
 	path: '/my/lists/:listId',
-	component: page(() => import('@/pages/my-lists/list.vue')),
+	component: ($i ? ($i.isAdmin ?? false) || $i.policies.userListAvailable : instance.policies.userListAvailable) ? page(() => import('@/pages/my-lists/list.vue')) : page(() => import('@/pages/not-found.vue')),
 	loginRequired: true,
 }, {
 	path: '/my/lists',
-	component: page(() => import('@/pages/my-lists/index.vue')),
+	component: ($i ? ($i.isAdmin ?? false) || $i.policies.userListAvailable : instance.policies.userListAvailable) ? page(() => import('@/pages/my-lists/index.vue')) : page(() => import('@/pages/not-found.vue')),
 	loginRequired: true,
 }, {
 	path: '/my/clips',
-	component: page(() => import('@/pages/my-clips/index.vue')),
+	component: ($i ? ($i.isAdmin ?? false) || $i.policies.clipAvailable : instance.policies.clipAvailable) ? page(() => import('@/pages/my-clips/index.vue')) : page(() => import('@/pages/not-found.vue')),
 	loginRequired: true,
 }, {
 	path: '/my/antennas/create',
@@ -564,7 +581,7 @@ export const ROUTE_DEF = [{
 	loginRequired: true,
 }, {
 	path: '/timeline/list/:listId',
-	component: page(() => import('@/pages/user-list-timeline.vue')),
+	component: ($i ? ($i.isAdmin ?? false) || $i.policies.userListAvailable : instance.policies.userListAvailable) ? page(() => import('@/pages/user-list-timeline.vue')) : page(() => import('@/pages/not-found.vue')),
 	loginRequired: true,
 }, {
 	path: '/timeline/antenna/:antennaId',

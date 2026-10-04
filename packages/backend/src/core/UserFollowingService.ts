@@ -29,6 +29,7 @@ import { AccountMoveService } from '@/core/AccountMoveService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import type { ThinUser } from '@/queue/types.js';
 import Logger from '../logger.js';
+import { RoleService } from './RoleService.js';
 
 const logger = new Logger('following/create');
 
@@ -48,6 +49,10 @@ type Both = Local | Remote;
 @Injectable()
 export class UserFollowingService implements OnModuleInit {
 	private userBlockingService: UserBlockingService;
+
+	public static RestrictedByRoleError = class extends IdentifiableError {
+		constructor() { super('1289a81e-fd16-4ed2-9ed8-1a77470959d6', 'Restricted by roles'); }
+	};
 
 	constructor(
 		private moduleRef: ModuleRef,
@@ -84,6 +89,7 @@ export class UserFollowingService implements OnModuleInit {
 		private webhookService: UserWebhookService,
 		private apRendererService: ApRendererService,
 		private accountMoveService: AccountMoveService,
+		private roleService: RoleService,
 		private perUserFollowingChart: PerUserFollowingChart,
 		private instanceChart: InstanceChart,
 	) {
@@ -120,6 +126,22 @@ export class UserFollowingService implements OnModuleInit {
 		if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isRemoteUser(followee)) {
 			// What?
 			throw new Error('Remote user cannot follow remote user.');
+		}
+
+		// check roles
+		const [followerPolicies, followeePolicies] = await Promise.all([
+			this.roleService.getUserPolicies(follower.id),
+			this.roleService.getUserPolicies(followee.id),
+		]);
+		if (this.userEntityService.isRemoteUser(follower) && (!followeePolicies.canFollowedFromOthers || !followerPolicies.canFollowing)) {
+			// リモートからのフォローがロールによって制限される場合は、 reject を送り返す
+			const content = this.apRendererService.addContext(this.apRendererService.renderReject(this.apRendererService.renderFollow(follower, followee, requestId), followee));
+			this.queueService.deliver(followee, content, follower.inbox, false);
+			return;
+		} else if (!followeePolicies.canFollowedFromOthers || !followerPolicies.canFollowing) {
+			throw new UserFollowingService.RestrictedByRoleError();
+		} else {
+			// keep going
 		}
 
 		// check blocking
