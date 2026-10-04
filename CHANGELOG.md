@@ -1,3 +1,11 @@
+## 2026.10.0-geoplanetary.12a
+
+### General
+- Fix: ロールが一部のLCFコンテキストに含まれていないのを修正
+
+### Client
+- Enhance: ノートにRawデータを表示
+
 ## 2026.10.0
 
 ### General

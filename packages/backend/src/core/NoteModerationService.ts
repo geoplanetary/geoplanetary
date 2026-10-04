@@ -243,6 +243,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 						return compiler.compile(compiler.parse(flag.condFormula))({
 							...note,
 							user: { ...user, roles: roles.map(o => { return { ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType; }) },
+							roles: roles.map(v => ({ ...v, updatedAt: v.updatedAt.valueOf(), lastUsedAt: v.lastUsedAt.valueOf() })),
 							flags: [...assigned.values()],
 						} as LCFExpressionRecordType);
 					} catch (_) { return false; }
