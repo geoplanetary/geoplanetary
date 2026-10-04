@@ -189,6 +189,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'renotes' }]" @click="tab = 'renotes'"><i class="ti ti-repeat"></i> {{ i18n.ts.renotes }}</button>
 			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'reactions' }]" @click="tab = 'reactions'"><i class="ti ti-icons"></i> {{ i18n.ts.reactions }}</button>
 			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'flags' }]" @click="tab = 'flags'"><i class="ti ti-flag"></i> {{ i18n.ts.noteFlags }}</button>
+			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'raw' }]" @click="tab = 'raw'"><i class="ti ti-code"></i> Raw</button>
 		</div>
 		<div>
 			<div v-if="tab === 'replies'">
@@ -227,6 +228,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 			<div v-else-if="tab === 'flags'">
 				<MkNoteFlagPreview v-for="flag in appearNote.flags" :key="flag.id" :class="$style.noteFlag" :flag="flag" :forModeration="iAmModerator" :detailed="false"/>
+			</div>
+			<div v-else-if="tab === 'raw'">
+				<div class="_spacer" style="--MI_SPACER-min: 16px; --MI_SPACER-max: 32px;">
+					<div style="display: flex; flex-direction: column; gap: 1em;">
+						<MkKeyValue :copy="appearNote.id" oneline>
+							<template #key>ID</template>
+							<template #value><span class="_monospace">{{ appearNote.id }}</span></template>
+						</MkKeyValue>
+						<MkKeyValue oneline>
+							<template #key>{{ i18n.ts.createdAt }}</template>
+							<template #value><span class="_monospace"><MkTime :time="appearNote.createdAt" :mode="'detail'"/></span></template>
+						</MkKeyValue>
+					</div>
+
+					<FormSection>
+						<template #label>Raw</template>
+						<MkObjectView tall :value="appearNote"></MkObjectView>
+					</FormSection>
+				</div>
 			</div>
 		</div>
 	</template>
@@ -272,10 +292,13 @@ import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkKeyValue from '@/components/MkKeyValue.vue';
+import FormSection from '@/components/form/section.vue';
+import MkObjectView from '@/components/MkObjectView.vue';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
-	initialTab?: 'replies' | 'renotes' | 'reactions' | 'flags';
+	initialTab?: 'replies' | 'renotes' | 'reactions' | 'flags' | 'raw';
 }>(), {
 	initialTab: 'replies',
 });
