@@ -43,6 +43,8 @@ import { MiMuting } from '@/models/Muting.js';
 import { MiRenoteMuting } from '@/models/RenoteMuting.js';
 import { MiNote } from '@/models/Note.js';
 import { MiNoteFavorite } from '@/models/NoteFavorite.js';
+import { MiNoteFlag } from '@/models/NoteFlag.js';
+import { MiNoteFlagAssignment } from '@/models/NoteFlagAssignment.js';
 import { MiNoteReaction } from '@/models/NoteReaction.js';
 import { MiNoteThreadMuting } from '@/models/NoteThreadMuting.js';
 import { MiNoteDraft } from '@/models/NoteDraft.js';
@@ -202,6 +204,8 @@ export const entities = [
 	MiRenoteMuting,
 	MiBlocking,
 	MiNote,
+	MiNoteFlag,
+	MiNoteFlagAssignment,
 	MiNoteFavorite,
 	MiNoteReaction,
 	MiNoteThreadMuting,
@@ -298,12 +302,8 @@ export function createPostgresDataSource(config: Config) {
 		cache: !config.db.disableCache && process.env.NODE_ENV !== 'test' ? { // dbをcloseしても何故かredisのコネクションが内部的に残り続けるようで、テストの際に支障が出るため無効にする(キャッシュも含めてテストしたいため本当は有効にしたいが...)
 			type: 'ioredis',
 			options: {
-				host: config.redis.host,
-				port: config.redis.port,
-				family: config.redis.family ?? 0,
-				password: config.redis.pass,
+				...config.redis,
 				keyPrefix: `${config.redis.prefix}:query:`,
-				db: config.redis.db ?? 0,
 			},
 		} : false,
 		logging: log,

@@ -19,7 +19,7 @@ import type {
 	RolesRepository,
 	UsersRepository,
 } from '@/models/_.js';
-import { MemoryKVCache, MemorySingleCache } from '@/misc/cache.js';
+import { MemoryKVCache, MemorySingleCache, RedisKVCache } from '@/misc/cache.js';
 import type { MiUser } from '@/models/User.js';
 import type { Config } from '@/config.js';
 import { DI } from '@/di-symbols.js';
@@ -160,6 +160,8 @@ export const DEFAULT_POLICIES: RolePolicies = {
 export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	private rolesCache: MemorySingleCache<MiRole[]>;
 	private roleAssignmentByUserIdCache: MemoryKVCache<MiRoleAssignment[]>;
+	private userRoleIdsCache: RedisKVCache<{ manual: Set<MiRole['id']>, conditional: Set<MiRole['id']> }>;
+	private userPoliciesCache: MemoryKVCache<RolePolicies>;
 	private notificationService: NotificationService;
 
 	public static AlreadyAssignedError = class extends Error { };
@@ -167,6 +169,9 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 
 	constructor(
 		private moduleRef: ModuleRef,
+
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
 
 		@Inject(DI.config)
 		private config: Config,
@@ -200,6 +205,31 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	) {
 		this.rolesCache = new MemorySingleCache<MiRole[]>(1000 * 60 * 60); // 1h
 		this.roleAssignmentByUserIdCache = new MemoryKVCache<MiRoleAssignment[]>(1000 * 60 * 5); // 5m
+		this.userRoleIdsCache = new RedisKVCache<{ manual: Set<MiRole['id']>, conditional: Set<MiRole['id']> }>(this.redisClient, 'userRoleIds', {
+			lifetime: 1000 * 60 * 30, // 30m
+			memoryCacheLifetime: 1000 * 60, // 1m
+			fetcher: async (userId: string) => {
+				const roles = await this.getRoles();
+				const assigns = await this.getUserAssigns(userId);
+				this.userPoliciesCache.delete(userId);
+				const assignedRoles = roles.filter(r => assigns.map(x => x.roleId).includes(r.id));
+				if (roles.some(r => r.target === 'conditional')) {
+					const user = await this.cacheService.findUserById(userId);
+					const profile = this.userEntityService.isLocalUser(user) ? await this.cacheService.userProfileCache.fetch(user.id) : null;
+					const instance = await this.federatedInstanceService.fetch(user.host ?? this.config.host);
+					const matchedCondRoles = roles.filter(r => r.target === 'conditional' && this.evalCond(user, profile, instance, assignedRoles, r.condFormula));
+					return { manual: new Set(assigns.map(v => v.roleId)), conditional: new Set(matchedCondRoles.map(v => v.id)) };
+				} else {
+					return { manual: new Set(assigns.map(v => v.roleId)), conditional: new Set() };
+				}
+			},
+			toRedisConverter(value) { return JSON.stringify({ manual: [...value.manual.values()], conditional: [...value.conditional.values()] }); },
+			fromRedisConverter(value) {
+				const obj = JSON.parse(value) as { manual: string[], conditional: string[] };
+				return { manual: new Set(obj.manual), conditional: new Set(obj.conditional) };
+			},
+		});
+		this.userPoliciesCache = new MemoryKVCache<RolePolicies>(1000 * 60 * 5); // 5m
 
 		this.redisForSub.on('message', this.onMessage);
 	}
@@ -210,10 +240,10 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 
 	@bindThis
 	private async onMessage(_: string, data: string): Promise<void> {
-		const obj = JSON.parse(data);
+		const obj = JSON.parse(data) as { [K in keyof GlobalEvents]: { channel: GlobalEvents[K]['name'], message: GlobalEvents[K]['payload'] } }[keyof GlobalEvents];
 
 		if (obj.channel === 'internal') {
-			const { type, body } = obj.message as GlobalEvents['internal']['payload'];
+			const { type, body } = obj.message;
 			switch (type) {
 				case 'roleCreated': {
 					const cached = this.rolesCache.get();
@@ -264,6 +294,19 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 					if (cached) {
 						this.roleAssignmentByUserIdCache.set(body.userId, cached.filter(x => x.id !== body.id));
 					}
+					break;
+				}
+				case 'userChangeDeletedState':
+				case 'userChangeSuspendedState':
+				case 'localUserUpdated':
+				case 'remoteUserUpdated': {
+					await this.userRoleIdsCache.delete(body.id);
+					this.userPoliciesCache.delete(body.id);
+					break;
+				}
+				case 'updateUserProfile': {
+					await this.userRoleIdsCache.delete(body.userId);
+					this.userPoliciesCache.delete(body.userId);
 					break;
 				}
 				default:
@@ -504,14 +547,12 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 
 	@bindThis
 	public async getUserRoles(userId: MiUser['id']) {
-		const roles = await this.rolesCache.fetch(() => this.rolesRepository.findBy({}));
-		const assigns = await this.getUserAssigns(userId);
-		const assignedRoles = roles.filter(r => assigns.map(x => x.roleId).includes(r.id));
-		const user = roles.some(r => r.target === 'conditional') ? await this.cacheService.findUserById(userId) : null;
-		const profile = user && this.userEntityService.isLocalUser(user) ? await this.cacheService.userProfileCache.fetch(user.id) : null;
-		const instance = user ? await this.federatedInstanceService.fetch(user.host ?? this.config.host) : null;
-		const matchedCondRoles = roles.filter(r => r.target === 'conditional' && this.evalCond(user, profile, instance, assignedRoles, r.condFormula));
-		return [...assignedRoles, ...matchedCondRoles];
+		const cache = await this.userRoleIdsCache.get(userId);
+		const freshSet = new Set((await this.getUserAssigns(userId)).map(v => v.roleId));
+		if (cache !== undefined && cache.manual.isSubsetOf(freshSet) && cache.manual.isSupersetOf(freshSet)) this.userRoleIdsCache.delete(userId);
+		const roles = await this.getRoles();
+		const userRoles = await this.userRoleIdsCache.fetch(userId);
+		return roles.filter(v => userRoles.manual.has(v.id) || userRoles.conditional.has(v.id));
 	}
 
 	/**
@@ -519,23 +560,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	 */
 	@bindThis
 	public async getUserBadgeRoles(userId: MiUser['id']) {
-		const now = Date.now();
-		let assigns = await this.roleAssignmentByUserIdCache.fetch(userId, () => this.roleAssignmentsRepository.findBy({ userId }));
-		// 期限切れのロールを除外
-		assigns = assigns.filter(a => a.expiresAt == null || (a.expiresAt.getTime() > now));
-		const roles = await this.rolesCache.fetch(() => this.rolesRepository.findBy({}));
-		const assignedRoles = roles.filter(r => assigns.map(x => x.roleId).includes(r.id));
-		const assignedBadgeRoles = assignedRoles.filter(r => r.asBadge);
-		const badgeCondRoles = roles.filter(r => r.asBadge && (r.target === 'conditional'));
-		if (badgeCondRoles.length > 0) {
-			const user = roles.some(r => r.target === 'conditional') ? await this.cacheService.findUserById(userId) : null;
-			const profile = user && this.userEntityService.isLocalUser(user) ? await this.cacheService.userProfileCache.fetch(user.id) : null;
-			const instance = user ? await this.federatedInstanceService.fetch(user.host ?? this.config.host) : null;
-			const matchedBadgeCondRoles = badgeCondRoles.filter(r => this.evalCond(user, profile, instance, assignedRoles, r.condFormula));
-			return [...assignedBadgeRoles, ...matchedBadgeCondRoles];
-		} else {
-			return assignedBadgeRoles;
-		}
+		return (await this.getUserRoles(userId)).filter(v => v.asBadge);
 	}
 
 	@bindThis
@@ -568,73 +593,75 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 
 		const serverMaxFileSizeMb = Math.floor(this.config.maxFileSize / (1024 * 1024));
 
-		return {
-			gtlAvailable: calc('gtlAvailable', vs => vs.some(v => v === true)),
-			ltlAvailable: calc('ltlAvailable', vs => vs.some(v => v === true)),
-			canPostNote: calc('canPostNote', vs => vs.some(v => v === true)),
-			noteLengthLimit: calc('noteLengthLimit', vs => Math.max(...vs)),
-			canPublicNote: calc('canPublicNote', vs => vs.some(v => v === true)),
-			canFederateNote: calc('canFederateNote', vs => vs.some(v => v === true)),
-			canAttachFiles: calc('canAttachFiles', vs => vs.some(v => v === true)),
-			canReply: calc('canReply', vs => vs.some(v => v === true)),
-			canQuote: calc('canQuote', vs => vs.some(v => v === true)),
-			canDirectMessage: calc('canDirectMessage', vs => vs.some(v => v === true)),
-			mentionLimit: calc('mentionLimit', vs => Math.max(...vs)),
-			canInvite: calc('canInvite', vs => vs.some(v => v === true)),
-			inviteLimit: calc('inviteLimit', vs => Math.max(...vs)),
-			inviteLimitCycle: calc('inviteLimitCycle', vs => Math.min(...vs)),
-			inviteExpirationTime: calc('inviteExpirationTime', vs => Math.max(...vs)),
-			canManageCustomEmojis: calc('canManageCustomEmojis', vs => vs.some(v => v === true)),
-			canManageAvatarDecorations: calc('canManageAvatarDecorations', vs => vs.some(v => v === true)),
-			canSearchNotes: calc('canSearchNotes', vs => vs.some(v => v === true)),
-			canSearchUsers: calc('canSearchUsers', vs => vs.some(v => v === true)),
-			canUseTranslator: calc('canUseTranslator', vs => vs.some(v => v === true)),
-			canHideAds: calc('canHideAds', vs => vs.some(v => v === true)),
-			canCreateChannel: calc('canCreateChannel', vs => vs.some(v => v === true)),
-			driveWritable: calc('driveWritable', vs => vs.some(v => v === true)),
-			driveCapacityMb: calc('driveCapacityMb', vs => Math.max(...vs)),
-			maxFileSizeMb: calc('maxFileSizeMb', vs => Math.min(serverMaxFileSizeMb, Math.max(...vs))),
-			alwaysMarkNsfw: calc('alwaysMarkNsfw', vs => vs.every(v => v === true)),
-			canUpdateBioMedia: calc('canUpdateBioMedia', vs => vs.some(v => v === true)),
-			pinLimit: calc('pinLimit', vs => Math.max(...vs)),
-			antennaLimit: calc('antennaLimit', vs => Math.max(...vs)),
-			wordMuteLimit: calc('wordMuteLimit', vs => Math.max(...vs)),
-			webhookLimit: calc('webhookLimit', vs => Math.max(...vs)),
-			clipAvailable: calc('clipAvailable', vs => vs.some(v => v === true)),
-			clipLimit: calc('clipLimit', vs => Math.max(...vs)),
-			noteEachClipsLimit: calc('noteEachClipsLimit', vs => Math.max(...vs)),
-			userListAvailable: calc('userListAvailable', vs => vs.some(v => v === true)),
-			userListLimit: calc('userListLimit', vs => Math.max(...vs)),
-			userEachUserListsLimit: calc('userEachUserListsLimit', vs => Math.max(...vs)),
-			rateLimitFactor: calc('rateLimitFactor', vs => Math.min(...vs)),
-			avatarDecorationLimit: calc('avatarDecorationLimit', vs => Math.max(...vs)),
-			canFollowing: calc('canFollowing', vs => vs.some(v => v === true)),
-			canFollowedFromOthers: calc('canFollowedFromOthers', vs => vs.some(v => v === true)),
-			requireSigninToViewContents: calc('requireSigninToViewContents', vs => {
-				const on = vs.some(v => v === 'force-enable');
-				const off = vs.some(v => v === 'force-disable');
-				return on && !off ? 'force-enable' : off && !on ? 'force-disable' : 'leave';
-			}),
-			canImportAntennas: calc('canImportAntennas', vs => vs.some(v => v === true)),
-			canImportBlocking: calc('canImportBlocking', vs => vs.some(v => v === true)),
-			canImportFollowing: calc('canImportFollowing', vs => vs.some(v => v === true)),
-			canImportMuting: calc('canImportMuting', vs => vs.some(v => v === true)),
-			canImportUserLists: calc('canImportUserLists', vs => vs.some(v => v === true)),
-			chatAvailability: calc('chatAvailability', aggregateChatAvailability),
-			uploadableFileTypes: calc('uploadableFileTypes', vs => {
-				const set = new Set<string>();
-				for (const v of vs) {
-					for (const type of v) {
-						if (type.trim() === '') continue;
-						set.add(type.trim());
+		return this.userPoliciesCache.fetch(userId, async () => {
+			return {
+				gtlAvailable: calc('gtlAvailable', vs => vs.some(v => v === true)),
+				ltlAvailable: calc('ltlAvailable', vs => vs.some(v => v === true)),
+				canPostNote: calc('canPostNote', vs => vs.some(v => v === true)),
+				noteLengthLimit: calc('noteLengthLimit', vs => Math.max(...vs)),
+				canPublicNote: calc('canPublicNote', vs => vs.some(v => v === true)),
+				canFederateNote: calc('canFederateNote', vs => vs.some(v => v === true)),
+				canAttachFiles: calc('canAttachFiles', vs => vs.some(v => v === true)),
+				canReply: calc('canReply', vs => vs.some(v => v === true)),
+				canQuote: calc('canQuote', vs => vs.some(v => v === true)),
+				canDirectMessage: calc('canDirectMessage', vs => vs.some(v => v === true)),
+				mentionLimit: calc('mentionLimit', vs => Math.max(...vs)),
+				canInvite: calc('canInvite', vs => vs.some(v => v === true)),
+				inviteLimit: calc('inviteLimit', vs => Math.max(...vs)),
+				inviteLimitCycle: calc('inviteLimitCycle', vs => Math.min(...vs)),
+				inviteExpirationTime: calc('inviteExpirationTime', vs => Math.max(...vs)),
+				canManageCustomEmojis: calc('canManageCustomEmojis', vs => vs.some(v => v === true)),
+				canManageAvatarDecorations: calc('canManageAvatarDecorations', vs => vs.some(v => v === true)),
+				canSearchNotes: calc('canSearchNotes', vs => vs.some(v => v === true)),
+				canSearchUsers: calc('canSearchUsers', vs => vs.some(v => v === true)),
+				canUseTranslator: calc('canUseTranslator', vs => vs.some(v => v === true)),
+				canHideAds: calc('canHideAds', vs => vs.some(v => v === true)),
+				canCreateChannel: calc('canCreateChannel', vs => vs.some(v => v === true)),
+				driveWritable: calc('driveWritable', vs => vs.some(v => v === true)),
+				driveCapacityMb: calc('driveCapacityMb', vs => Math.max(...vs)),
+				maxFileSizeMb: calc('maxFileSizeMb', vs => Math.min(serverMaxFileSizeMb, Math.max(...vs))),
+				alwaysMarkNsfw: calc('alwaysMarkNsfw', vs => vs.every(v => v === true)),
+				canUpdateBioMedia: calc('canUpdateBioMedia', vs => vs.some(v => v === true)),
+				pinLimit: calc('pinLimit', vs => Math.max(...vs)),
+				antennaLimit: calc('antennaLimit', vs => Math.max(...vs)),
+				wordMuteLimit: calc('wordMuteLimit', vs => Math.max(...vs)),
+				webhookLimit: calc('webhookLimit', vs => Math.max(...vs)),
+				clipAvailable: calc('clipAvailable', vs => vs.some(v => v === true)),
+				clipLimit: calc('clipLimit', vs => Math.max(...vs)),
+				noteEachClipsLimit: calc('noteEachClipsLimit', vs => Math.max(...vs)),
+				userListAvailable: calc('userListAvailable', vs => vs.some(v => v === true)),
+				userListLimit: calc('userListLimit', vs => Math.max(...vs)),
+				userEachUserListsLimit: calc('userEachUserListsLimit', vs => Math.max(...vs)),
+				rateLimitFactor: calc('rateLimitFactor', vs => Math.min(...vs)),
+				avatarDecorationLimit: calc('avatarDecorationLimit', vs => Math.max(...vs)),
+				canFollowing: calc('canFollowing', vs => vs.some(v => v === true)),
+				canFollowedFromOthers: calc('canFollowedFromOthers', vs => vs.some(v => v === true)),
+				requireSigninToViewContents: calc('requireSigninToViewContents', vs => {
+					const on = vs.some(v => v === 'force-enable');
+					const off = vs.some(v => v === 'force-disable');
+					return on && !off ? 'force-enable' : off && !on ? 'force-disable' : 'leave';
+				}),
+				canImportAntennas: calc('canImportAntennas', vs => vs.some(v => v === true)),
+				canImportBlocking: calc('canImportBlocking', vs => vs.some(v => v === true)),
+				canImportFollowing: calc('canImportFollowing', vs => vs.some(v => v === true)),
+				canImportMuting: calc('canImportMuting', vs => vs.some(v => v === true)),
+				canImportUserLists: calc('canImportUserLists', vs => vs.some(v => v === true)),
+				chatAvailability: calc('chatAvailability', aggregateChatAvailability),
+				uploadableFileTypes: calc('uploadableFileTypes', vs => {
+					const set = new Set<string>();
+					for (const v of vs) {
+						for (const type of v) {
+							if (type.trim() === '') continue;
+							set.add(type.trim());
+						}
 					}
-				}
-				return [...set];
-			}),
-			noteDraftLimit: calc('noteDraftLimit', vs => Math.max(...vs)),
-			scheduledNoteLimit: calc('scheduledNoteLimit', vs => Math.max(...vs)),
-			watermarkAvailable: calc('watermarkAvailable', vs => vs.some(v => v === true)),
-		};
+					return [...set];
+				}),
+				noteDraftLimit: calc('noteDraftLimit', vs => Math.max(...vs)),
+				scheduledNoteLimit: calc('scheduledNoteLimit', vs => Math.max(...vs)),
+				watermarkAvailable: calc('watermarkAvailable', vs => vs.some(v => v === true)),
+			};
+		});
 	}
 
 	@bindThis
@@ -917,6 +944,8 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	public dispose(): void {
 		this.redisForSub.off('message', this.onMessage);
 		this.roleAssignmentByUserIdCache.dispose();
+		this.userRoleIdsCache.dispose();
+		this.userPoliciesCache.dispose();
 	}
 
 	@bindThis

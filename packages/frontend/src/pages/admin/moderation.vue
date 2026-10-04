@@ -43,7 +43,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps">
 							<MkTextarea v-model="preservedUsernames">
-								<template #caption>{{ i18n.ts.preservedUsernamesDescription }}<br/><b>{{ i18n.ts.preservedUsernamesWarning }}</b></template>
+								<template #caption>
+									<div>{{ i18n.ts.preservedUsernamesDescription }}</div>
+									<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts.preservedUsernamesWarning }}</div>
+								</template>
 							</MkTextarea>
 							<MkButton primary @click="save_preservedUsernames">{{ i18n.ts.save }}</MkButton>
 						</div>
@@ -70,7 +73,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps">
 							<MkTextarea v-model="sensitiveWords">
-								<template #caption>{{ i18n.ts.sensitiveWordsDescription }}<br>{{ i18n.ts.sensitiveWordsDescription2 }}</template>
+								<template #caption>
+									<div>{{ i18n.ts.sensitiveWordsDescription }}<br>{{ i18n.ts.sensitiveWordsDescription2 }}</div>
+									<MkFolder>
+										<template #label>{{ i18n.ts._lcfExpression.inputContext }}: <code>InspectionSubject</code></template>
+										<MkCode lang="typescript" :code="'type InspectionSubject = {\n\tuserId: MiUser[\'id\'];\n\ttext: string | null;\n\treply: MiNote | null;\n\trenote: MiNote | null;\n\tfiles: MiDriveFile[] | null;\n\tmentions: { username: string; host: string | null; }[];\n\ttags: string[];\n\troles: MiRole[];\n}'"></MkCode>
+									</MkFolder>
+								</template>
 							</MkTextarea>
 							<MkButton primary @click="save_sensitiveWords">{{ i18n.ts.save }}</MkButton>
 						</div>
@@ -84,7 +93,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps">
 							<MkTextarea v-model="prohibitedWords">
-								<template #caption>{{ i18n.ts.prohibitedWordsDescription }}<br>{{ i18n.ts.prohibitedWordsDescription2 }}</template>
+								<template #caption>
+									<div>{{ i18n.ts.prohibitedWordsDescription }}<br>{{ i18n.ts.prohibitedWordsDescription2 }}</div>
+									<MkFolder>
+										<template #label>{{ i18n.ts._lcfExpression.inputContext }}: <code>InspectionSubject</code></template>
+										<MkCode lang="typescript" :code="'type InspectionSubject = {\n\tuserId: MiUser[\'id\'];\n\ttext: string | null;\n\treply: MiNote | null;\n\trenote: MiNote | null;\n\tfiles: MiDriveFile[] | null;\n\tmentions: { username: string; host: string | null; }[];\n\ttags: string[];\n\troles: MiRole[];\n}'"></MkCode>
+									</MkFolder>
+								</template>
 							</MkTextarea>
 							<MkButton primary @click="save_prohibitedWords">{{ i18n.ts.save }}</MkButton>
 						</div>
@@ -126,7 +141,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps">
 							<ProhibitedNoteFormula v-model="prohibitedNotePattern">
-								<template #caption>{{ i18n.ts._prohibitedNote.description }}</template>
+								<template #caption>
+									<div>{{ i18n.ts._prohibitedNote.description }}</div>
+									<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts._prohibitedNote.deplecatedWarning }}</div>
+								</template>
 							</ProhibitedNoteFormula>
 							<MkButton primary @click="save_prohibitedNotePattern">{{ i18n.ts.save }}</MkButton>
 						</div>
@@ -197,6 +215,7 @@ import MkButton from '@/components/MkButton.vue';
 import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSelect from '@/components/MkSelect.vue';
+import MkCode from '@/components/MkCode.vue';
 
 const meta = await misskeyApi('admin/meta');
 
@@ -266,7 +285,7 @@ function save_preservedUsernames() {
 	});
 }
 
-function parse_usernameEntropyTable(): { result: 'ok', value } | { result: 'err', error } {
+function parse_usernameEntropyTable(): { result: 'ok', value: any } | { result: 'err', error: unknown } {
 	try {
 		return { result: 'ok', value: usernameEntropyTable.value !== '' ? JSON.parse(usernameEntropyTable.value) : null };
 	} catch (err) {
@@ -321,6 +340,7 @@ function save_hiddenTags() {
 
 function save_prohibitedNotePattern() {
 	os.apiWithDialog('admin/update-meta', {
+		// @ts-expect-error Misskey API のパラメータ定義を十分に行うことができない
 		prohibitedNotePattern: prohibitedNotePattern.value,
 	}).then(() => {
 		fetchInstance(true);

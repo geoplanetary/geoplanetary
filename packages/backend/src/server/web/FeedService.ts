@@ -6,6 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { In, IsNull } from 'typeorm';
 import { Feed } from 'feed';
+import { parse as mfmParse } from 'mfm-js';
 import { DI } from '@/di-symbols.js';
 import type { DriveFilesRepository, NotesRepository, UserProfilesRepository } from '@/models/_.js';
 import type { Config } from '@/config.js';
@@ -14,8 +15,9 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
-import { MfmService } from "@/core/MfmService.js";
-import { parse as mfmParse } from 'mfm-js';
+import { MfmService } from '@/core/MfmService.js';
+import { NoteModerationService } from '@/core/NoteModerationService.js';
+import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
 
 @Injectable()
 export class FeedService {
@@ -36,6 +38,7 @@ export class FeedService {
 		private driveFileEntityService: DriveFileEntityService,
 		private idService: IdService,
 		private mfmService: MfmService,
+		private noteModerationService: NoteModerationService,
 	) {
 	}
 
@@ -56,7 +59,11 @@ export class FeedService {
 			},
 			order: { id: -1 },
 			take: 20,
-		});
+		}).then(notes => notes.filter(note => {
+			const createdAt = this.idService.parse(note.id).date;
+			return !shouldHideNoteByTime(user.makeNotesHiddenBefore, createdAt)
+				&& !shouldHideNoteByTime(user.makeNotesFollowersOnlyBefore, createdAt);
+		}));
 
 		const feed = new Feed({
 			id: author.link,
@@ -75,6 +82,9 @@ export class FeedService {
 		});
 
 		for (const note of notes) {
+			const notePolicies = await this.noteModerationService.getNotePolicies(note.id);
+			if (notePolicies.masked) continue;
+
 			const files = note.fileIds.length > 0 ? await this.driveFilesRepository.findBy({
 				id: In(note.fileIds),
 			}) : [];

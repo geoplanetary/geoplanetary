@@ -149,6 +149,7 @@ import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { ensureSignin, notesCount, incNotesCount } from '@/i.js';
 import { getAccounts, getAccountMenu } from '@/accounts.js';
+import { noteFlagsCache } from '@/cache.js';
 import { deepClone } from '@/utility/clone.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import { miLocalStorage } from '@/local-storage.js';
@@ -228,6 +229,7 @@ const justEndedComposition = ref(false);
 const renoteTargetNote: ShallowRef<PostFormProps['renote'] | null> = shallowRef(props.renote);
 const replyTargetNote: ShallowRef<PostFormProps['reply'] | null> = shallowRef(props.reply);
 const targetChannel = shallowRef(props.channel);
+const flags = ref<Set<Misskey.entities.NoteFlagLite['id']>>(new Set([]));
 
 const serverDraftId = ref<string | null>(null);
 const postFormActions = getPluginHandlers('post_form_action');
@@ -462,6 +464,7 @@ function watchForDraft() {
 	watch(quoteId, () => saveDraft());
 	watch(reactionAcceptance, () => saveDraft());
 	watch(scheduledAt, () => saveDraft());
+	watch(flags, () => saveDraft(), { deep: true });
 }
 
 function checkMissingMention() {
@@ -678,6 +681,18 @@ function showOtherSettings() {
 		action: () => {
 			toggleReactionAcceptance();
 		},
+	}, {
+		type: 'parent',
+		text: i18n.ts.noteFlags,
+		icon: 'ti ti-flag',
+		children: async () => (await noteFlagsCache.fetch()).filter(f => 'target' in f ? f.target === 'manual' : f.canAssignByUser).map(flag => ({
+			type: 'switch',
+			text: flag.name,
+			ref: computed({
+				get: () => flags.value.has(flag.id),
+				set: (v) => v ? flags.value.add(flag.id) : flags.value.delete(flag.id),
+			}),
+		})),
 	}, { type: 'divider' }, {
 		type: 'button',
 		text: i18n.ts._drafts.saveToDraft,
@@ -904,6 +919,7 @@ type StoredDrafts = {
 			files: Misskey.entities.DriveFile[];
 			poll: PollEditorModelValue | null;
 			visibleUserIds?: string[];
+			flags: string[];
 			quoteId: string | null;
 			reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
 			scheduledAt: number | null;
@@ -927,6 +943,7 @@ function saveDraft() {
 			files: files.value,
 			poll: poll.value,
 			...( visibleUsers.value.length > 0 ? { visibleUserIds: visibleUsers.value.map(x => x.id) } : {}),
+			flags: [...flags.value.values()],
 			quoteId: quoteId.value,
 			reactionAcceptance: reactionAcceptance.value,
 			scheduledAt: scheduledAt.value,
@@ -963,6 +980,7 @@ async function saveServerDraft(options: {
 		reactionAcceptance: reactionAcceptance.value,
 		scheduledAt: scheduledAt.value,
 		isActuallyScheduled: options.isActuallyScheduled ?? false,
+		flagIds: [...flags.value.values()],
 	});
 }
 
@@ -1035,6 +1053,7 @@ async function post(ev?: PointerEvent) {
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
+		flagIds: [...flags.value.values()],
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {
@@ -1294,6 +1313,7 @@ async function openAccountMenu(ev: PointerEvent) {
 				reactionAcceptance.value = draft.reactionAcceptance;
 				scheduledAt.value = draft.scheduledAt ?? null;
 				if (draft.channel) targetChannel.value = draft.channel as unknown as Misskey.entities.Channel;
+				flags.value = new Set(draft.flagIds);
 
 				visibleUsers.value = [];
 				draft.visibleUserIds?.forEach(uid => {
@@ -1442,6 +1462,7 @@ onMounted(() => {
 				}
 				quoteId.value = draft.data.quoteId;
 				reactionAcceptance.value = draft.data.reactionAcceptance;
+				flags.value = new Set(draft.data.flags);
 				scheduledAt.value = draft.data.scheduledAt ?? null;
 			}
 		}
@@ -1470,6 +1491,7 @@ onMounted(() => {
 			}
 			quoteId.value = renoteTargetNote.value ? renoteTargetNote.value.id : null;
 			reactionAcceptance.value = init.reactionAcceptance;
+			flags.value = new Set((init.flags ? init.flags.filter(f => 'target' in f ? f.target === 'manual' : f.canAssignByUser) : []).map(f => f.id));
 		}
 
 		nextTick(() => watchForDraft());

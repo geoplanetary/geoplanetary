@@ -13,7 +13,7 @@ import { extractCustomEmojisFromMfm } from '@/misc/extract-custom-emojis-from-mf
 import { extractHashtags } from '@/misc/extract-hashtags.js';
 import type { IMentionedRemoteUsers } from '@/models/Note.js';
 import { MiNote } from '@/models/Note.js';
-import type { BlockingsRepository, ChannelFollowingsRepository, ChannelsRepository, DriveFilesRepository, FollowingsRepository, InstancesRepository, MiFollowing, MiMeta, MutingsRepository, NotesRepository, NoteThreadMutingsRepository, UserListMembershipsRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
+import type { BlockingsRepository, ChannelFollowingsRepository, ChannelsRepository, DriveFilesRepository, FollowingsRepository, InstancesRepository, MiFollowing, MiMeta, MiNoteFlag, MutingsRepository, NotesRepository, NoteThreadMutingsRepository, UserListMembershipsRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiApp } from '@/models/App.js';
 import { concat } from '@/misc/prelude/array.js';
@@ -54,7 +54,8 @@ import { UserBlockingService } from '@/core/UserBlockingService.js';
 import { isReply } from '@/misc/is-reply.js';
 import { trackPromise } from '@/misc/promise-tracker.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
-import { NoteProhibitService } from '@/core/NoteProhibitService.js';
+import type { InspectionSubject } from '@/core/NoteModerationService.js';
+import { NoteModerationService } from '@/core/NoteModerationService.js';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { CacheService } from '@/core/CacheService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
@@ -182,6 +183,7 @@ type Option = {
 	visibility?: string;
 	visibleUsers?: MinimumUser[] | null;
 	channel?: MiChannel | null;
+	flags?: MiNoteFlag[] | null;
 	apMentions?: MinimumUser[] | null;
 	apMentionRawCount?: number | null;
 	apHashtags?: string[] | null;
@@ -194,11 +196,30 @@ type Option = {
 @Injectable()
 export class NoteCreateService implements OnApplicationShutdown {
 	#shutdownController = new AbortController();
-	public static MatchedProhibitedPatternsError = class extends Error { };
-	public static QuoteProhibitedUserError = class extends Error { };
-	public static ReplyProhibitedUserError = class extends Error { };
-	public static DirectMessageProhibitedUserError = class extends Error { };
-	public static AttachFileProhibitedUserError = class extends Error { };
+	public static MatchedProhibitedPatternsError = class extends IdentifiableError {
+		public static readonly id = '93eb0d79-53a4-45bf-8e41-9d53c6241904';
+		constructor() { super(NoteCreateService.MatchedProhibitedPatternsError.id, 'Cannot post because matches a pattern of prohibited posts.'); }
+	};
+	public static QuoteProhibitedUserError = class extends IdentifiableError {
+		public static readonly id = 'ca0e1d97-8653-4941-840e-46e01f20d2e2';
+		constructor() { super(NoteCreateService.QuoteProhibitedUserError.id, 'User can\'t send quote/renote due to the policy.'); }
+	};
+	public static ReplyProhibitedUserError = class extends IdentifiableError {
+		public static readonly id = '0111bcfb-ad1b-4193-845c-f31921a27bcb';
+		constructor() { super(NoteCreateService.ReplyProhibitedUserError.id, 'User can\'t send reply due to the policy.'); }
+	};
+	public static DirectMessageProhibitedUserError = class extends IdentifiableError {
+		public static readonly id = '4178aee4-d918-4bd5-8121-b29339f305d0';
+		constructor() { super(NoteCreateService.DirectMessageProhibitedUserError.id, 'User can\'t send user-specified note due to the policy.'); }
+	};
+	public static AttachFileProhibitedUserError = class extends IdentifiableError {
+		public static readonly id = '01fb0ffe-57a0-4791-a6c9-32ee3895cb74';
+		constructor() { super(NoteCreateService.AttachFileProhibitedUserError.id, 'User can\'t attach file due to the policy.'); }
+	};
+	public static ProhibitedByNotePolicyError = class extends IdentifiableError {
+		public static readonly id = 'd43b2072-2952-4298-b893-4df1f03b8517';
+		constructor() { super(NoteCreateService.ProhibitedByNotePolicyError.id, 'Rejected due to the policy of the referenced note.'); }
+	};
 	private updateNotesCountQueue: CollapsedQueue<MiNote['id'], number>;
 
 	constructor(
@@ -275,7 +296,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private utilityService: UtilityService,
 		private userBlockingService: UserBlockingService,
 		private cacheService: CacheService,
-		private noteProhibitService: NoteProhibitService,
+		private noteModerationService: NoteModerationService,
 	) {
 		this.updateNotesCountQueue = new CollapsedQueue(process.env.NODE_ENV !== 'test' ? 60 * 1000 * 5 : 0, this.collapseNotesCount, this.performUpdateNotesCount);
 	}
@@ -298,6 +319,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		visibleUserIds: MiUser['id'][];
 		channelId: MiChannel['id'] | null;
 		localOnly: boolean;
+		flagIds: MiNoteFlag['id'][];
 		reactionAcceptance: MiNote['reactionAcceptance'];
 		poll: IPoll | null;
 		apMentions?: MinimumUser[] | null;
@@ -308,7 +330,6 @@ export class NoteCreateService implements OnApplicationShutdown {
 			id: In(data.visibleUserIds),
 		}) : [];
 
-		// TODO: コール回数多いAPIのためキャッシュする
 		const policies = (await this.roleService.getUserPolicies(user.id));
 		if (data.text && data.text.length > policies.noteLengthLimit) {
 			throw new IdentifiableError('8c148117-4d13-4ada-8cf3-4d6286a2bf03', 'Cannot post notes longer than your role limit.');
@@ -347,6 +368,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 			} else if (isRenote(renote) && !isQuote(renote)) {
 				throw new IdentifiableError('bde24c37-121f-4e7d-980d-cec52f599f02', 'Cannot renote pure renote');
 			}
+
+			const renotePolicies = await this.noteModerationService.getNotePolicies(data.renoteId);
+			if (!renotePolicies.enableQuote) throw new NoteCreateService.ProhibitedByNotePolicyError();
 
 			// Check blocking
 			if (renote.userId !== user.id) {
@@ -401,8 +425,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 				throw new IdentifiableError('ced780a1-2012-4caf-bc7e-a95a291294cb', 'Cannot reply to specified note with different visibility');
 			}
 
+			const replyPolicies = await this.noteModerationService.getNotePolicies(data.replyId);
+
 			// Check blocking
 			if (reply.userId !== user.id) {
+				if (!replyPolicies.enableReply) throw new NoteCreateService.ProhibitedByNotePolicyError();
 				const blockExist = await this.blockingsRepository.exists({
 					where: {
 						blockerId: reply.userId,
@@ -432,6 +459,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 			}
 		}
 
+		// 投稿予約されたノートに対するユーザビリティ確保のため、存在しないフラグIDが見つかった場合はエラーとせず単に無視する
+		const assignableFlags = (await this.noteModerationService.getAssignableFlags(user.id));
+		const requestedFlags = new Set(data.flagIds);
+		const flags = assignableFlags.filter(v => requestedFlags.has(v.id));
+
 		return this.create(user, {
 			createdAt: data.createdAt,
 			files: files,
@@ -445,6 +477,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			visibility: data.visibility,
 			visibleUsers,
 			channel,
+			flags,
 			apMentions: data.apMentions,
 			apHashtags: data.apHashtags,
 			apEmojis: data.apEmojis,
@@ -484,19 +517,18 @@ export class NoteCreateService implements OnApplicationShutdown {
 		const policies = await this.roleService.getUserPolicies(user.id);
 
 		if (data.visibility === 'public' && data.channel == null) {
-			const sensitiveWords = this.meta.sensitiveWords;
-			if (this.utilityService.isKeyWordIncluded(data.cw ?? data.text ?? '', sensitiveWords)) {
+			if (this.noteModerationService.checkSensitiveWordsContain(data.cw ?? data.text ?? '')) {
 				data.visibility = 'home';
 			} else if (policies.canPublicNote === false) {
 				data.visibility = 'home';
 			}
 		}
 
-		const hasProhibitedWords = this.checkProhibitedWordsContain({
+		const hasProhibitedWords = this.noteModerationService.checkProhibitedWordsContain({
 			cw: data.cw,
 			text: data.text,
 			pollChoices: data.poll?.choices,
-		}, this.meta.prohibitedWords);
+		});
 
 		if (hasProhibitedWords) {
 			throw new IdentifiableError('689ee33f-f97c-479a-ac49-1b9f8140af99', 'Note contains prohibited words');
@@ -672,23 +704,40 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		const effectiveMentionCount = Math.max(mentionedUsers.length, data.apMentionRawCount ?? 0);
-		if (effectiveMentionCount > 0 && effectiveMentionCount > (await this.roleService.getUserPolicies(user.id)).mentionLimit) {
+		if (effectiveMentionCount > 0 && effectiveMentionCount > policies.mentionLimit) {
 			throw new IdentifiableError('9f466dab-c856-48cd-9e65-ff90ff750580', 'Note contains too many mentions');
 		}
 
-		if (await this.noteProhibitService.isProhibitedNote({
+		const roles = await this.roleService.getUserRoles(user.id);
+		const moderationSubject: InspectionSubject = {
 			userId: user.id,
 			text: data.text,
 			reply: data.reply ?? null,
 			renote: data.renote ?? null,
 			mentions: mentionedUsers.map(v => { return { username: v.username, host: v.host }; }),
-			hashtags: tags,
+			tags: tags,
 			files: data.files ?? null,
-		})) {
+			roles,
+			flags: [],
+		};
+
+		if (data.visibility === 'public' && this.noteModerationService.evalSensitiveNoteExpr(moderationSubject)) {
+			data.visibility = 'home';
+		}
+
+		if (this.noteModerationService.evalProhibitedNoteExpr(moderationSubject)) {
+			throw new NoteCreateService.MatchedProhibitedPatternsError();
+		}
+
+		// ![deplecated feature]: あとでけす
+		if (this.noteModerationService.isProhibitedNote(moderationSubject)) {
 			throw new NoteCreateService.MatchedProhibitedPatternsError();
 		}
 
 		const note = await this.insertNote(user, data, tags, emojis, mentionedUsers);
+		for (const flag of data.flags ?? []) {
+			await this.noteModerationService.assignFlagToNote(note.id, flag.id);
+		}
 
 		setImmediate('post created', { signal: this.#shutdownController.signal }).then(
 			() => this.postNoteCreated(note, user, data, silent, tags!, mentionedUsers!),
@@ -808,6 +857,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 		host: MiUser['host'];
 		isBot: MiUser['isBot'];
 	}, data: Option, silent: boolean, tags: string[], mentionedUsers: MinimumUser[]) {
+		const policies = await this.noteModerationService.getNotePolicies(note.id);
+
 		this.notesChart.update(note, true);
 		if (note.visibility !== 'specified' && (this.meta.enableChartsForRemoteUser || (user.host == null))) {
 			this.perUserNotesChart.update(user, note, true);
@@ -890,7 +941,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			});
 		}
 
-		if (!silent) {
+		if (!silent && !policies.masked) {
 			if (this.userEntityService.isLocalUser(user)) this.activeUsersChart.write(user);
 
 			// Pack the note

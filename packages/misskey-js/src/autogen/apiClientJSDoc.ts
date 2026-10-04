@@ -593,6 +593,94 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * Assign note flag to note.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+     */
+    request<E extends 'admin/note-flags/assign', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Create a new note flag.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+     */
+    request<E extends 'admin/note-flags/create', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Delete a existing note flag.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+     */
+    request<E extends 'admin/note-flags/delete', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Get a list of note flag.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:admin:note-flags*
+     */
+    request<E extends 'admin/note-flags/list', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Get a note flag.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:admin:note-flags*
+     */
+    request<E extends 'admin/note-flags/show', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Unassign note flag to note.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+     */
+    request<E extends 'admin/note-flags/unassign', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Update a existing note flag.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+     */
+    request<E extends 'admin/note-flags/update', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Set default policies for note.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+     */
+    request<E extends 'admin/note-flags/update-default-policies', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * No description provided.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:admin:promo*
@@ -2429,7 +2517,7 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
-     * **Credential required**: *No*
+     * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     request<E extends 'federation/update-remote-user', P extends Endpoints[E]['req']>(
       endpoint: E,
@@ -3642,6 +3730,39 @@ declare module '../api.js' {
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     request<E extends 'my/apps', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Assign note flag to note.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:notes*
+     */
+    request<E extends 'note-flags/create', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Unassign note flag to note.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:notes*
+     */
+    request<E extends 'note-flags/delete', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Get a list of note flag.
+     * 
+     * **Credential required**: *No*
+     */
+    request<E extends 'note-flags/list', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,

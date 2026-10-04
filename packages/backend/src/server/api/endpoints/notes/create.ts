@@ -144,6 +144,12 @@ export const meta = {
 			code: 'CONTAINS_TOO_MANY_MENTIONS',
 			id: '4de0363a-3046-481b-9b0f-feff3e211025',
 		},
+
+		restrictedByNotePolicy: {
+			message: 'This feature is restricted by note policy.',
+			code: 'RESTRICTED_BY_NOTE_POLICY',
+			id: 'e99e92d7-bed2-5033-aed2-252a2469c2f3', // UUIDv5: 'ns:api.geoplanetary.net/errors/RESTRICTED_BY_NOTE_POLICY'
+		},
 	},
 } as const;
 
@@ -151,9 +157,11 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		visibility: { type: 'string', enum: ['public', 'home', 'followers', 'specified'], default: 'public' },
-		visibleUserIds: { type: 'array', uniqueItems: true, items: {
-			type: 'string', format: 'misskey:id',
-		} },
+		visibleUserIds: {
+			type: 'array', uniqueItems: true, items: {
+				type: 'string', format: 'misskey:id',
+			},
+		},
 		cw: { type: 'string', nullable: true, minLength: 1, maxLength: 100 },
 		localOnly: { type: 'boolean', default: false },
 		reactionAcceptance: { type: 'string', nullable: true, enum: [null, 'likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'], default: null },
@@ -202,6 +210,11 @@ export const paramDef = {
 				expiredAfter: { type: 'integer', nullable: true, minimum: 1 },
 			},
 			required: ['choices'],
+		},
+		flagIds: {
+			type: 'array',
+			uniqueItems: true,
+			items: { type: 'string', format: 'misskey:id' },
 		},
 	},
 	// (re)note with text, files and poll are optional
@@ -260,6 +273,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					visibility: ps.visibility,
 					visibleUserIds: ps.visibleUserIds ?? [],
 					channelId: ps.channelId ?? null,
+					flagIds: ps.flagIds ?? [],
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
@@ -307,22 +321,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw new ApiError(meta.errors.cannotCreateAlreadyExpiredPoll);
 					} else if (err.id === 'bfa3905b-25f5-4894-b430-da331a490e4b') {
 						throw new ApiError(meta.errors.noSuchChannel);
+					} else if (err.errorIs(NoteCreateService.MatchedProhibitedPatternsError)) {
+						throw new ApiError(meta.errors.matchedProhibitedPatterns);
+					} else if (err.errorIs(NoteCreateService.AttachFileProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.QuoteProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.ReplyProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.DirectMessageProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.ProhibitedByNotePolicyError)) {
+						throw new ApiError(meta.errors.restrictedByNotePolicy);
 					}
-				}
-				if (err instanceof NoteCreateService.MatchedProhibitedPatternsError) {
-					throw new ApiError(meta.errors.matchedProhibitedPatterns);
-				}
-				if (err instanceof NoteCreateService.AttachFileProhibitedUserError) {
-					throw new ApiError(meta.errors.restrictedByRole);
-				}
-				if (err instanceof NoteCreateService.QuoteProhibitedUserError) {
-					throw new ApiError(meta.errors.restrictedByRole);
-				}
-				if (err instanceof NoteCreateService.ReplyProhibitedUserError) {
-					throw new ApiError(meta.errors.restrictedByRole);
-				}
-				if (err instanceof NoteCreateService.DirectMessageProhibitedUserError) {
-					throw new ApiError(meta.errors.restrictedByRole);
 				}
 				throw err;
 			}

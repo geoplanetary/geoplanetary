@@ -4465,7 +4465,7 @@ export interface Locale extends ILocale {
      */
     "sensitiveWordsDescription": string;
     /**
-     * スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。
+     * スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。$から始まる行はLCF式になります。
      */
     "sensitiveWordsDescription2": string;
     /**
@@ -4477,7 +4477,7 @@ export interface Locale extends ILocale {
      */
     "prohibitedWordsDescription": string;
     /**
-     * スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。
+     * スペースで区切るとAND指定になり、キーワードをスラッシュで囲むと正規表現になります。$から始まる行はLCF式になります。
      */
     "prohibitedWordsDescription2": string;
     /**
@@ -8669,6 +8669,143 @@ export interface Locale extends ILocale {
             "not": string;
         };
     };
+    /**
+     * ノートフラグ
+     */
+    "noteFlags": string;
+    "_noteFlag": {
+        /**
+         * フラグ
+         */
+        "flag": string;
+        /**
+         * フラグ
+         */
+        "flags": string;
+        /**
+         * フラグの作成
+         */
+        "new": string;
+        /**
+         * フラグの編集
+         */
+        "edit": string;
+        /**
+         * フラグ名
+         */
+        "name": string;
+        /**
+         * フラグの説明
+         */
+        "description": string;
+        /**
+         * アサイン
+         */
+        "assignTarget": string;
+        /**
+         * マニュアルはフラグを付与するノートを手動で管理します。
+         * コンディショナルは条件を設定し、それに合致するノートが自動で含まれるようになります。
+         */
+        "descriptionOfAssignTarget": string;
+        /**
+         * マニュアル
+         */
+        "manual": string;
+        /**
+         * マニュアルフラグ
+         */
+        "manualFlags": string;
+        /**
+         * コンディショナル
+         */
+        "conditional": string;
+        /**
+         * コンディショナルフラグ
+         */
+        "conditionalFlags": string;
+        /**
+         * 条件LCF式
+         */
+        "condition": string;
+        /**
+         * 公開フラグ
+         */
+        "isPublic": string;
+        /**
+         * バッジとして表示
+         */
+        "asBadge": string;
+        /**
+         * ノートにこのフラグがバッジとして表示されます。
+         */
+        "descriptionOfAsBadge": string;
+        /**
+         * オプション
+         */
+        "options": string;
+        /**
+         * ノートポリシー
+         */
+        "policies": string;
+        /**
+         * ベースポリシー
+         */
+        "basePolicy": string;
+        /**
+         * 既定値を使用
+         */
+        "useBaseValue": string;
+        /**
+         * アサインするフラグを選択
+         */
+        "chooseRoleToAssign": string;
+        /**
+         * アイコン画像のURL
+         */
+        "iconUrl": string;
+        /**
+         * 表示順
+         */
+        "displayOrder": string;
+        /**
+         * 優先度
+         */
+        "priority": string;
+        /**
+         * 数値が大きいほどUI上で先頭に表示されます。
+         */
+        "descriptionOfDisplayOrder": string;
+        /**
+         * ユーザーによるフラグ付けを許可
+         */
+        "canAssignToOwnNoteByUser": string;
+        /**
+         * オンにすると、ユーザーが自身のノートにこのフラグをつけることができるようになります。
+         */
+        "descriptionOfCanAssignToOwnNoteByUser": string;
+        /**
+         * ハッシュ
+         */
+        "hash": string;
+        /**
+         * 許容する誤差
+         */
+        "allowDifference": string;
+        "_policies": {
+            /**
+             * ノートを投稿者とモデレーター以外から見えなくする
+             */
+            "masked": string;
+            /**
+             * ノートへの返信を許可する
+             */
+            "enableReply": string;
+            /**
+             * ノートへの引用/Renoteを許可する
+             */
+            "enableQuote": string;
+        };
+    };
     "_prohibitedNote": {
         /**
          * 投稿禁止ノートのパターン
@@ -8694,6 +8831,10 @@ export interface Locale extends ILocale {
          * 許容する誤差
          */
         "allowDifference": string;
+        /**
+         * この機能は非推奨となりました。今後のリリースで削除される可能性があります。
+         */
+        "deplecatedWarning": string;
         "_condition": {
             /**
              * 偽
@@ -8820,6 +8961,16 @@ export interface Locale extends ILocale {
              */
             "hasHashtagMatchOf": string;
         };
+    };
+    "_lcfExpression": {
+        /**
+         * LCF式
+         */
+        "lcfExpression": string;
+        /**
+         * LCF式 入力コンテキスト
+         */
+        "inputContext": string;
     };
     "_sensitiveMediaDetection": {
         /**
@@ -10106,6 +10257,14 @@ export interface Locale extends ILocale {
          * ロールを見る
          */
         "read:admin:roles": string;
+        /**
+         * フラグを操作する
+         */
+        "write:admin:note-flags": string;
+        /**
+         * フラグを見る
+         */
+        "read:admin:note-flags": string;
         /**
          * リレーを操作する
          */
@@ -11924,6 +12083,26 @@ export interface Locale extends ILocale {
          * ロールのアサイン解除
          */
         "unassignRole": string;
+        /**
+         * フラグを作成
+         */
+        "createNoteFlag": string;
+        /**
+         * フラグを削除
+         */
+        "deleteNoteFlag": string;
+        /**
+         * フラグを更新
+         */
+        "updateNoteFlag": string;
+        /**
+         * フラグへアサイン
+         */
+        "assignNoteFlag": string;
+        /**
+         * フラグのアサイン解除
+         */
+        "unassignNoteFlag": string;
         /**
          * 凍結
          */

@@ -8,6 +8,7 @@ import { EntropyTable } from '@/misc/string-entropy.js';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import type { ProhibitedNoteFormulaValue } from './ProhibitedNoteFormula.js';
+import type { NotePolicyRecords } from './NoteFlag.js';
 
 @Entity('meta')
 export class MiMeta {
@@ -105,8 +106,9 @@ export class MiMeta {
 	})
 	public silencedHosts: string[];
 
+	// ![deplecated feature]: あとでけす
 	@Column('jsonb', {
-		default: { },
+		default: {},
 	})
 	public prohibitedNotePattern: ProhibitedNoteFormulaValue;
 
@@ -577,9 +579,14 @@ export class MiMeta {
 	public enableIdenticonGeneration: boolean;
 
 	@Column('jsonb', {
-		default: { },
+		default: {},
 	})
 	public policies: Record<string, any>;
+
+	@Column('jsonb', {
+		default: {},
+	})
+	public notePolicies: NotePolicyRecords;
 
 	@Column('varchar', {
 		length: 280,
@@ -767,7 +774,7 @@ export class MiMeta {
 	public showRoleBadgesOfRemoteUsers: boolean;
 
 	@Column('jsonb', {
-		default: { },
+		default: {},
 	})
 	public clientOptions: {
 		entrancePageStyle: 'classic' | 'simple';

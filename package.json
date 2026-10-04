@@ -1,6 +1,6 @@
 {
 	"name": "misskey",
-	"version": "2026.9.0-geoplanetary.11b",
+	"version": "2026.10.0-geoplanetary.12",
 	"codename": "nasubi",
 	"repository": {
 		"type": "git",
@@ -15,6 +15,7 @@
 		"packages/frontend-embed",
 		"packages/i18n",
 		"packages/icons-subsetter",
+		"packages/lcf-expression",
 		"packages/sw",
 		"packages/misskey-js",
 		"packages/misskey-js/generator",

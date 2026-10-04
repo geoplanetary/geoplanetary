@@ -9,7 +9,6 @@ process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
 import { describe, beforeAll, afterAll, test } from 'vitest';
-import { expect } from '@jest/globals';
 import { api, castAsError, initTestDb, post, role, signup, uploadFile, uploadUrl } from '../utils.js';
 import type * as misskey from 'misskey-js';
 import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
@@ -749,7 +748,7 @@ describe('Note', () => {
 			};
 			const postNote = await api('notes/create', post, bob);
 
-			expect(postNote.status).toStrictEqual(403);
+			assert.strictEqual(postNote.status, 403);
 
 			await api('admin/roles/unassign', {
 				userId: bob.id,
@@ -1590,25 +1589,25 @@ describe('Note', () => {
 					},
 				},
 			}, alice);
-			expect(role.status).toStrictEqual(200);
+			assert.strictEqual(role.status, 200);
 
 			const assign = await api('admin/roles/assign', {
 				userId: alice.id,
 				roleId: role.body.id,
 			}, alice);
-			expect(assign.status).toStrictEqual(204);
+			assert.strictEqual(assign.status, 204);
 
 			const bobPost = await api('notes/create', {
 				text: 'test',
 			}, bob);
-			expect(bobPost.status).toStrictEqual(200);
-			expect(bobPost.body.createdNote.localOnly ?? false).toStrictEqual(false);
+			assert.strictEqual(bobPost.status, 200);
+			assert.strictEqual(bobPost.body.createdNote.localOnly ?? false, false);
 
 			const alicePost = await api('notes/create', {
 				text: 'test',
 			}, alice);
-			expect(alicePost.status).toStrictEqual(200);
-			expect(alicePost.body.createdNote.localOnly ?? false).toStrictEqual(true);
+			assert.strictEqual(alicePost.status, 200);
+			assert.strictEqual(alicePost.body.createdNote.localOnly ?? false, true);
 
 			await api('admin/roles/unassign', {
 				userId: alice.id,
@@ -1642,25 +1641,25 @@ describe('Note', () => {
 					},
 				},
 			}, alice);
-			expect(role.status).toStrictEqual(200);
+			assert.strictEqual(role.status, 200);
 
 			const assign = await api('admin/roles/assign', {
 				userId: alice.id,
 				roleId: role.body.id,
 			}, alice);
-			expect(assign.status).toStrictEqual(204);
+			assert.strictEqual(assign.status, 204);
 
 			const post1 = await api('notes/create', {
 				text: 'test',
 			}, alice);
-			expect(post1.status).toStrictEqual(200);
+			assert.strictEqual(post1.status, 200);
 
 			const file = await uploadUrl(alice, 'https://raw.githubusercontent.com/misskey-dev/misskey/develop/packages/backend/test/resources/192.jpg');
 			const post2 = await api('notes/create', {
 				text: 'test',
 				fileIds: [file.id],
 			}, alice);
-			expect(post2.status).toStrictEqual(400);
+			assert.strictEqual(post2.status, 400);
 
 			await api('admin/roles/unassign', {
 				userId: alice.id,
@@ -1924,9 +1923,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (無条件マッチ)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'true',
-			},
+			prohibitedWords: [
+				'$true',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -1957,15 +1956,14 @@ describe('Note', () => {
 			isExplorable: false,
 			asBadge: false,
 			canEditMembersByModerator: false,
-			policies: { },
+			policies: {},
 		}, alice);
 		assert.strictEqual(role.status, 200);
 
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'roleAssignedTo',
-				roleId: role.body.id,
-			},
+			prohibitedWords: [
+				`$.roles:some(.id:equals("${role.body.id}"))`,
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2004,9 +2002,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (テキスト有無)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasText',
-			},
+			prohibitedWords: [
+				'$.text:empty:not',
+			],
 		}, alice);
 
 		assert.strictEqual(prohibited.status, 204);
@@ -2030,10 +2028,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (テキストマッチ)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'textMatchOf',
-				pattern: 'foo',
-			},
+			prohibitedWords: [
+				'$.text:match("foo")',
+			],
 		}, alice);
 
 		assert.strictEqual(prohibited.status, 204);
@@ -2067,9 +2064,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (メンション有無)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasMentions',
-			},
+			prohibitedWords: [
+				'$.mentions:empty:not',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2092,10 +2089,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (メンション個数一致)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'mentionCountIs',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.mentions:size:equals(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2118,10 +2114,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (メンション個数以上)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'mentionCountMoreThanOrEq',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.mentions:size:geq(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2144,10 +2139,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (メンション個数未満)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'mentionCountLessThan',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.mentions:size:lt(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2170,9 +2164,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (返信)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'isReply',
-			},
+			prohibitedWords: [
+				'$.reply:is_null:not',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2200,9 +2194,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (引用/Renote)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'isQuoted',
-			},
+			prohibitedWords: [
+				'$.renote:is_null:not',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2230,9 +2224,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ファイル有無)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasFiles',
-			},
+			prohibitedWords: [
+				'$.files:empty:not',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2258,10 +2252,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ファイル数一致)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'fileCountIs',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.files:size:equals(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2289,10 +2282,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ファイル数以上)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'fileCountMoreThanOrEq',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.files:size:geq(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2320,10 +2312,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ファイル数未満)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'fileCountLessThan',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.files:size:lt(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2350,10 +2341,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ファイル総サイズ以上)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'fileTotalSizeMoreThanOrEq',
-				size: 65536,
-			},
+			prohibitedWords: [
+				'$.files:map(.size):accumulate:geq(65536)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2381,10 +2371,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ファイル総サイズ未満)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'fileTotalSizeLessThan',
-				size: 1024,
-			},
+			prohibitedWords: [
+				'$.files:map(.size):accumulate:lt(1024)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2412,10 +2401,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ファイルサイズ以上)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasFileSizeMoreThanOrEq',
-				size: 65536,
-			},
+			prohibitedWords: [
+				'$.files:some(.size:geq(65536))',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2443,10 +2431,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ファイルサイズ未満)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasFileSizeLessThan',
-				size: 1024,
-			},
+			prohibitedWords: [
+				'$.files:some(.size:geq(1024))',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2477,10 +2464,9 @@ describe('Note', () => {
 		const file2 = await uploadUrl(alice, 'https://raw.githubusercontent.com/misskey-dev/misskey/develop/packages/backend/test/resources/192.jpg');
 
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasFileMD5Is',
-				hash: file2.md5,
-			},
+			prohibitedWords: [
+				`$.file:some(.md5:equals(${file2.md5}))`,
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2505,9 +2491,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (非ブラウザセーフファイル)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasBrowserInsafe',
-			},
+			prohibitedWords: [
+				'$.files:some(.type:browsersafe:not)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2535,9 +2521,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (画像ファイル)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasPictures',
-			},
+			prohibitedWords: [
+				'$.files:some(.type:match(/^image\\//))',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2569,11 +2555,9 @@ describe('Note', () => {
 		assert.notEqual(file2.blurhash, null);
 
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasLikelyBlurhash',
-				hash: file2.blurhash ?? '',
-				diff: 0,
-			},
+			prohibitedWords: [
+				`$.files:some(.blurhash:blurhashdiff(${file2.blurhash ?? ''}):leq(0))`,
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2598,9 +2582,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ハッシュタグ有無)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasHashtags',
-			},
+			prohibitedWords: [
+				'$.tags:empty:not',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2610,7 +2594,7 @@ describe('Note', () => {
 			text: '#foo yo',
 		}, alice);
 		assert.strictEqual(note1.status, 400);
-		assert.strictEqual(note1.body.error.code, 'MATCHED_PROHIBITED_PATTERNS');
+		assert.strictEqual((note1.body as unknown as { error: { message: string, code: string, id: string } }).error.code, 'MATCHED_PROHIBITED_PATTERNS');
 
 		const note2 = await api('notes/create', {
 			text: 'yo',
@@ -2624,10 +2608,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ハッシュタグ個数一致)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hashtagCountIs',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.tags:size:equals(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2650,10 +2633,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ハッシュタグ個数以上)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hashtagCountMoreThanOrEq',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.tags:size:geq(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2676,10 +2658,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ハッシュタグ個数未満)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hashtagCountLessThan',
-				value: 2,
-			},
+			prohibitedWords: [
+				'$.tags:size:lt(2)',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
@@ -2702,10 +2683,9 @@ describe('Note', () => {
 
 	test('禁止パターンを含む投稿はエラーになる (ハッシュタグパターン一致)', async () => {
 		const prohibited = await api('admin/update-meta', {
-			prohibitedNotePattern: {
-				type: 'hasHashtagMatchOf',
-				pattern: 'foo',
-			},
+			prohibitedWords: [
+				'$.tags:some(:match("foo"))',
+			],
 		}, alice);
 		assert.strictEqual(prohibited.status, 204);
 
