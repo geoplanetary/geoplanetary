@@ -9,7 +9,6 @@ process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
 import { describe, beforeAll, afterAll, test } from 'vitest';
-import { expect } from '@jest/globals';
 import { api, castAsError, initTestDb, post, role, signup, uploadFile, uploadUrl } from '../utils.js';
 import type * as misskey from 'misskey-js';
 import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
@@ -749,7 +748,7 @@ describe('Note', () => {
 			};
 			const postNote = await api('notes/create', post, bob);
 
-			expect(postNote.status).toStrictEqual(403);
+			assert.strictEqual(postNote.status, 403);
 
 			await api('admin/roles/unassign', {
 				userId: bob.id,
@@ -1590,25 +1589,25 @@ describe('Note', () => {
 					},
 				},
 			}, alice);
-			expect(role.status).toStrictEqual(200);
+			assert.strictEqual(role.status, 200);
 
 			const assign = await api('admin/roles/assign', {
 				userId: alice.id,
 				roleId: role.body.id,
 			}, alice);
-			expect(assign.status).toStrictEqual(204);
+			assert.strictEqual(assign.status, 204);
 
 			const bobPost = await api('notes/create', {
 				text: 'test',
 			}, bob);
-			expect(bobPost.status).toStrictEqual(200);
-			expect(bobPost.body.createdNote.localOnly ?? false).toStrictEqual(false);
+			assert.strictEqual(bobPost.status, 200);
+			assert.strictEqual(bobPost.body.createdNote.localOnly ?? false, false);
 
 			const alicePost = await api('notes/create', {
 				text: 'test',
 			}, alice);
-			expect(alicePost.status).toStrictEqual(200);
-			expect(alicePost.body.createdNote.localOnly ?? false).toStrictEqual(true);
+			assert.strictEqual(alicePost.status, 200);
+			assert.strictEqual(alicePost.body.createdNote.localOnly ?? false, true);
 
 			await api('admin/roles/unassign', {
 				userId: alice.id,
@@ -1642,25 +1641,25 @@ describe('Note', () => {
 					},
 				},
 			}, alice);
-			expect(role.status).toStrictEqual(200);
+			assert.strictEqual(role.status, 200);
 
 			const assign = await api('admin/roles/assign', {
 				userId: alice.id,
 				roleId: role.body.id,
 			}, alice);
-			expect(assign.status).toStrictEqual(204);
+			assert.strictEqual(assign.status, 204);
 
 			const post1 = await api('notes/create', {
 				text: 'test',
 			}, alice);
-			expect(post1.status).toStrictEqual(200);
+			assert.strictEqual(post1.status, 200);
 
 			const file = await uploadUrl(alice, 'https://raw.githubusercontent.com/misskey-dev/misskey/develop/packages/backend/test/resources/192.jpg');
 			const post2 = await api('notes/create', {
 				text: 'test',
 				fileIds: [file.id],
 			}, alice);
-			expect(post2.status).toStrictEqual(400);
+			assert.strictEqual(post2.status, 400);
 
 			await api('admin/roles/unassign', {
 				userId: alice.id,
@@ -1957,7 +1956,7 @@ describe('Note', () => {
 			isExplorable: false,
 			asBadge: false,
 			canEditMembersByModerator: false,
-			policies: { },
+			policies: {},
 		}, alice);
 		assert.strictEqual(role.status, 200);
 
@@ -2595,7 +2594,7 @@ describe('Note', () => {
 			text: '#foo yo',
 		}, alice);
 		assert.strictEqual(note1.status, 400);
-		assert.strictEqual(note1.body.error.code, 'MATCHED_PROHIBITED_PATTERNS');
+		assert.strictEqual((note1.body as unknown as { error: { message: string, code: string, id: string } }).error.code, 'MATCHED_PROHIBITED_PATTERNS');
 
 		const note2 = await api('notes/create', {
 			text: 'yo',
