@@ -1,3 +1,9 @@
+## 2026.10.0-geoplanetary.12c
+
+### General
+- Fix: LCF式でエスケープの処理が正しくできていないのを修正
+
+
 ## 2026.10.0-geoplanetary.12b
 
 ### General
