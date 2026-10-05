@@ -12,6 +12,10 @@ export const packedNotePoliciesSchema = {
 			type: 'boolean',
 			nullable: false, optional: true,
 		},
+		defaultMuted: {
+			type: 'boolean',
+			nullable: false, optional: true,
+		},
 		enableReply: {
 			type: 'boolean',
 			nullable: false, optional: true,
@@ -46,6 +50,10 @@ export const packedNotePolicyOverridesSchema = {
 	type: 'object',
 	properties: {
 		masked: {
+			type: 'object',
+			ref: 'NotePolicyOverrideBooleanValue',
+		},
+		defaultMuted: {
 			type: 'object',
 			ref: 'NotePolicyOverrideBooleanValue',
 		},

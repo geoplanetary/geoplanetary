@@ -278,6 +278,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 					break;
 				}
 				case 'userRoleAssigned': {
+					await this.userRoleIdsCache.delete(body.userId);
 					const cached = this.roleAssignmentByUserIdCache.get(body.userId);
 					if (cached) {
 						cached.push({ // TODO: このあたりのデシリアライズ処理は各modelファイル内に関数としてexportしたい
@@ -290,6 +291,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 					break;
 				}
 				case 'userRoleUnassigned': {
+					await this.userRoleIdsCache.delete(body.userId);
 					const cached = this.roleAssignmentByUserIdCache.get(body.userId);
 					if (cached) {
 						this.roleAssignmentByUserIdCache.set(body.userId, cached.filter(x => x.id !== body.id));

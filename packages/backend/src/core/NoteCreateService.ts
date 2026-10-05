@@ -857,6 +857,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		host: MiUser['host'];
 		isBot: MiUser['isBot'];
 	}, data: Option, silent: boolean, tags: string[], mentionedUsers: MinimumUser[]) {
+		const flags = new Set((await this.noteModerationService.getFlagsOfNote(note.id)).map(f => f.id));
 		const policies = await this.noteModerationService.getNotePolicies(note.id);
 
 		this.notesChart.update(note, true);
@@ -910,7 +911,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 							const userIdsWhoMeMutingRenotes = await this.cacheService.renoteMutingsCache.fetch(following.followerId);
 							isRenoteMuted = userIdsWhoMeMutingRenotes.has(user.id);
 						}
-						if (!isRenoteMuted) {
+						const mutingFlagIds = await this.noteModerationService.getUserMutedFlagIds(following.followerId);
+						if (!isRenoteMuted && mutingFlagIds.isDisjointFrom(flags)) {
 							this.notificationService.createNotification(following.followerId, 'note', {
 								noteId: note.id,
 							}, user.id);
@@ -968,7 +970,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 						},
 					});
 
-					if (!isThreadMuted) {
+					const mutingFlagIds = await this.noteModerationService.getUserMutedFlagIds(data.reply.userId);
+
+					if (!isThreadMuted && mutingFlagIds.isDisjointFrom(flags)) {
 						nm.push(data.reply.userId, 'reply');
 						this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
 						this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
@@ -980,13 +984,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 			if (this.isRenote(data)) {
 				const type = this.isQuote(data) ? 'quote' : 'renote';
 
+				const mutingFlagIds = await this.noteModerationService.getUserMutedFlagIds(data.renote.userId);
+
 				// Notify
-				if (data.renote.userHost === null) {
+				if (data.renote.userHost === null && mutingFlagIds.isDisjointFrom(flags)) {
 					nm.push(data.renote.userId, type);
 				}
 
 				// Publish event
-				if ((user.id !== data.renote.userId) && data.renote.userHost === null) {
+				if ((user.id !== data.renote.userId) && data.renote.userHost === null && mutingFlagIds.isDisjointFrom(flags)) {
 					this.globalEventService.publishMainStream(data.renote.userId, 'renote', noteObj);
 					this.webhookService.enqueueUserWebhook(data.renote.userId, 'renote', { note: noteObj });
 				}
@@ -1112,6 +1118,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 			const detailPackedNote = await this.noteEntityService.pack(note, u, {
 				detail: true,
 			});
+
+			if (detailPackedNote.isHidden ?? false) {
+				continue;
+			}
 
 			this.globalEventService.publishMainStream(u.id, 'mention', detailPackedNote);
 			this.webhookService.enqueueUserWebhook(u.id, 'mention', { note: detailPackedNote });

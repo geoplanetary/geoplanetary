@@ -27,6 +27,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<div class="_gaps_s">
 			<XItem
+				v-if="matchQuery([i18n.ts._noteFlag._policies.defaultMuted, 'defaultMuted'])"
+				v-model:overrideMeta="policyOverrides.defaultMuted.value" :readonly="readonly"
+			>
+				<template #label>{{ i18n.ts._noteFlag._policies.defaultMuted }}</template>
+				<template #valueText>{{ policyValues.defaultMuted.value ? i18n.ts.yes : i18n.ts.no }}</template>
+				<template #default="{ disabled }">
+					<MkSwitch v-model="policyValues.defaultMuted.value" :disabled="disabled">
+						<template #label>{{ i18n.ts.enable }}</template>
+					</MkSwitch>
+				</template>
+			</XItem>
+		</div>
+
+		<div class="_gaps_s">
+			<XItem
 				v-if="matchQuery([i18n.ts._noteFlag._policies.enableReply, 'enableReply'])"
 				v-model:overrideMeta="policyOverrides.enableReply.value" :readonly="readonly"
 			>
@@ -100,6 +115,7 @@ watch(() => props.policies, () => {
 
 const defaultPolicyValues = {
 	masked: false,
+	defaultMuted: false,
 	enableQuote: true,
 	enableReply: true,
 } as const satisfies Required<Mi.entities.NotePolicies>;

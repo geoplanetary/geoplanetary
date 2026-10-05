@@ -92,6 +92,14 @@ export const meta = {
 					type: 'string',
 				},
 			},
+			mutedFlagIds: {
+				type: 'array',
+				nullable: false, optional: false,
+				items: {
+					type: 'string',
+					nullable: false, optional: false,
+				},
+			},
 			notificationRecieveConfig: {
 				type: 'object',
 				optional: false, nullable: false,
@@ -252,6 +260,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				receiveAnnouncementEmail: profile.receiveAnnouncementEmail,
 				mutedWords: profile.mutedWords,
 				mutedInstances: profile.mutedInstances,
+				mutedFlagIds: profile.mutedFlagIds,
 				notificationRecieveConfig: profile.notificationRecieveConfig,
 				isModerator: isModerator,
 				isSilenced: isSilenced,

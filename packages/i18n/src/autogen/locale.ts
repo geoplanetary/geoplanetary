@@ -8791,11 +8791,19 @@ export interface Locale extends ILocale {
          * 許容する誤差
          */
         "allowDifference": string;
+        /**
+         * フラグミュート
+         */
+        "flagMute": string;
         "_policies": {
             /**
              * ノートを投稿者とモデレーター以外から見えなくする
              */
             "masked": string;
+            /**
+             * 非ログインユーザーに対し、フラグの付いたノートをミュートする
+             */
+            "defaultMuted": string;
             /**
              * ノートへの返信を許可する
              */

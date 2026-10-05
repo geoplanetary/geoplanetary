@@ -13,6 +13,11 @@ export type MiNotePolicies = {
 	masked: boolean;
 
 	/**
+	 * 非ログインユーザーに対し、フラグの付いたノートをミュートする
+	 */
+	defaultMuted: boolean;
+
+	/**
 	 * ノートへの返信を有効化する
 	 */
 	enableReply: boolean;
@@ -25,6 +30,7 @@ export type MiNotePolicies = {
 
 export const DEFAULT_POLICIES: MiNotePolicies = {
 	masked: false,
+	defaultMuted: false,
 	enableReply: true,
 	enableQuote: true,
 };

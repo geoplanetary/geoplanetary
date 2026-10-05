@@ -50,6 +50,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 	private noteFlagAssignmentsByNoteCache: RedisKVCache<model.MiNoteFlagAssignment[]>;
 	private noteFlagIdsCache: MemoryKVCache<{ manual: Set<model.MiNoteFlag['id']>, conditional: Set<model.MiNoteFlag['id']> }>;
 	private cacheMayExpireUsers: MemoryKVCache<true>;
+	private userMutingFlagIdCache: MemoryKVCache<Set<model.MiNoteFlag['id']>>;
 	private prohibitedWords: string[];
 	private prohibitedNoteExpr: LCFAST[];
 	private sensitiveWords: string[];
@@ -108,6 +109,9 @@ export class NoteModerationService implements OnApplicationShutdown {
 		@Inject(DI.meta)
 		private meta: model.MiMeta,
 
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: model.UserProfilesRepository,
+
 		@Inject(DI.notesRepository)
 		private notesRepository: model.NotesRepository,
 
@@ -136,6 +140,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 		});
 		this.noteFlagIdsCache = new MemoryKVCache<{ manual: Set<model.MiNoteFlag['id']>, conditional: Set<model.MiNoteFlag['id']> }>(1000 * 60); // 1min
 		this.cacheMayExpireUsers = new MemoryKVCache<true>(1000 * 60); // = noteFlagIdsCache.constructor.lifetime
+		this.userMutingFlagIdCache = new MemoryKVCache<Set<model.MiNoteFlag['id']>>(1000 * 60 * 5); // 5min
 
 		this.updateProhibitedWords();
 		this.updateSensitiveWords();
@@ -188,9 +193,18 @@ export class NoteModerationService implements OnApplicationShutdown {
 					break;
 				}
 				case 'userRoleAssigned':
-				case 'userRoleUnassigned':
+				case 'userRoleUnassigned': {
+					this.cacheMayExpireUsers.set(body.userId, true);
+					break;
+				}
 				case 'updateUserProfile': {
 					this.cacheMayExpireUsers.set(body.userId, true);
+					this.userMutingFlagIdCache.delete(body.userId);
+					break;
+				}
+				case 'localUserUpdated': {
+					this.cacheMayExpireUsers.set(body.id, true);
+					this.userMutingFlagIdCache.delete(body.id);
 					break;
 				}
 				default: break;
@@ -226,10 +240,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 	public async getFlagsOfNote(noteId: model.MiNote['id']) {
 		const flags = await this.getAllFlags();
 		const poster = await this.noteUserCache.fetch(noteId, async () => (await this.notesRepository.findOneByOrFail({ id: noteId })).userId);
-		const expire = this.cacheMayExpireUsers.get(poster);
-		if (expire) {
-			this.noteFlagIdsCache.delete(poster);
-		}
+		const validCache = () => !(this.cacheMayExpireUsers.get(poster) ?? false);
 		const idset = await this.noteFlagIdsCache.fetch(noteId, async () => {
 			const assigned = new Set((await this.noteFlagAssignmentsByNoteCache.fetch(noteId)).map(v => v.flagId));
 			const note = await this.notesRepository.findOneByOrFail({ id: noteId });
@@ -252,7 +263,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 			} else {
 				return { manual: assigned, conditional: new Set() };
 			}
-		});
+		}, validCache);
 		return flags.filter(flag => (flag.target === 'manual' && idset.manual.has(flag.id)) || (flag.target === 'conditional' && idset.conditional.has(flag.id)));
 	}
 
@@ -272,9 +283,10 @@ export class NoteModerationService implements OnApplicationShutdown {
 		}
 
 		return {
-			masked: aggregatePolicy('masked', v => v.every(i => i.value)),
-			enableReply: aggregatePolicy('enableReply', v => v.some(i => i.value)),
-			enableQuote: aggregatePolicy('enableQuote', v => v.some(i => i.value)),
+			masked: aggregatePolicy('masked', v => v.some(i => i.value)),
+			defaultMuted: aggregatePolicy('defaultMuted', v => v.some(i => i.value)),
+			enableReply: aggregatePolicy('enableReply', v => v.every(i => i.value)),
+			enableQuote: aggregatePolicy('enableQuote', v => v.every(i => i.value)),
 		};
 	}
 
@@ -406,6 +418,22 @@ export class NoteModerationService implements OnApplicationShutdown {
 				noteUserHost: note.userHost,
 			});
 		}
+	}
+
+	/**
+	 * 指定したユーザーがミュートしているフラグのIDリストを取得する。
+	 * ユーザーが指定されていない場合、またはローカルユーザーではない場合、既定でミュートとなるフラグのリストを返す。
+	 * @param userId 検査対象のユーザーID
+	 */
+	@bindThis
+	public async getUserMutedFlagIds(userId: model.MiUser['id'] | null | undefined): Promise<Set<model.MiNoteFlag['id']>> {
+		const flags = (await this.getAllFlags()).filter(f => f.isPublic);
+		const flagIds = new Set(flags.map(f => f.id));
+		const getDefault = () => flags.filter(f => f.policies.defaultMuted).map(f => f.id);
+		if (!userId) return new Set(getDefault());
+		const user = await this.cacheService.findUserById(userId);
+		if (user.host !== null) return new Set(getDefault());
+		return flagIds.intersection(await this.userMutingFlagIdCache.fetch(userId, async () => new Set((await this.userProfilesRepository.findOneBy({ userId: user.id }))?.mutedFlagIds ?? getDefault())));
 	}
 
 	@bindThis

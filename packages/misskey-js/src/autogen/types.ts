@@ -4266,6 +4266,7 @@ export type components = {
             mutedWords: string[][];
             hardMutedWords: string[][];
             mutedInstances: string[];
+            mutedFlagIds: string[];
             notificationRecieveConfig: {
                 note?: {
                     /** @enum {string} */
@@ -5634,11 +5635,13 @@ export type components = {
         };
         NotePolicyOverrides: {
             masked: components['schemas']['NotePolicyOverrideBooleanValue'];
+            defaultMuted: components['schemas']['NotePolicyOverrideBooleanValue'];
             enableReply: components['schemas']['NotePolicyOverrideBooleanValue'];
             enableQuote: components['schemas']['NotePolicyOverrideBooleanValue'];
         };
         NotePolicies: {
             masked?: boolean;
+            defaultMuted?: boolean;
             enableReply?: boolean;
             enableQuote?: boolean;
         };
@@ -12630,6 +12633,7 @@ export interface operations {
                         receiveAnnouncementEmail: boolean;
                         mutedWords: (string | string[])[];
                         mutedInstances: string[];
+                        mutedFlagIds: string[];
                         notificationRecieveConfig: {
                             note?: {
                                 /** @enum {string} */
@@ -28699,6 +28703,7 @@ export interface operations {
                     mutedWords?: (string[] | string)[];
                     hardMutedWords?: (string[] | string)[];
                     mutedInstances?: string[];
+                    mutedFlagIds?: string[];
                     notificationRecieveConfig?: {
                         note?: {
                             /** @enum {string} */
