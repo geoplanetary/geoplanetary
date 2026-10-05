@@ -161,6 +161,11 @@ export class NoteEntityService implements OnModuleInit {
 			return true;
 		}
 
+		const mutedFlagIds = await this.noteModerationService.getUserMutedFlagIds(meId);
+		if (packedNote.flagIds?.some(f => mutedFlagIds.has(f))) {
+			return true;
+		}
+
 		// visibility が specified かつ自分が指定されていなかったら非表示
 		if (packedNote.visibility === 'specified') {
 			if (meId == null) {

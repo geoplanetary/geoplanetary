@@ -22,6 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span :class="$style.bodyName">{{ props.flag.name }}</span>
 		</div>
 		<div :class="$style.bodyDescription">{{ props.flag.description }}</div>
+		<div><slot></slot></div>
 	</div>
 </MkA>
 <span v-else :class="$style.root" tabindex="-1" :style="`--color: ${props.flag.color}`">
@@ -38,6 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span :class="$style.bodyName">{{ props.flag.name }}</span>
 		</div>
 		<div :class="$style.bodyDescription">{{ props.flag.description }}</div>
+		<div><slot></slot></div>
 	</div>
 </span>
 </template>

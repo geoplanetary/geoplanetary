@@ -244,6 +244,12 @@ export class MiUserProfile {
 	public mutedInstances: string[];
 
 	@Column('jsonb', {
+		default: [],
+		comment: 'List of note flags muted by the user.',
+	})
+	public mutedFlagIds: string[];
+
+	@Column('jsonb', {
 		default: {},
 	})
 	public notificationRecieveConfig: {

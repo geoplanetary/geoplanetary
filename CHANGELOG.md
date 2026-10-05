@@ -1,5 +1,8 @@
 ## 2026.10.0-geoplanetary.12b
 
+### General
+- Enhance: ノートフラグ単位でのミュート機能
+
 ## Server
 - Fix: ユーザーロールのキャッシュが意図せず残っているのを修正
 

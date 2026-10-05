@@ -2278,8 +2278,10 @@ _noteFlag:
   descriptionOfCanAssignToOwnNoteByUser: "オンにすると、ユーザーが自身のノートにこのフラグをつけることができるようになります。"
   hash: "ハッシュ"
   allowDifference: "許容する誤差"
+  flagMute: "フラグミュート"
   _policies:
     masked: "ノートを投稿者とモデレーター以外から見えなくする"
+    defaultMuted: "非ログインユーザーに対し、フラグの付いたノートをミュートする"
     enableReply: "ノートへの返信を許可する"
     enableQuote: "ノートへの引用/Renoteを許可する"
 

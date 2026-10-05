@@ -33,6 +33,7 @@ import { HttpRequestService } from '@/core/HttpRequestService.js';
 import type { Config } from '@/config.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { notificationRecieveConfig } from '@/models/json-schema/user.js';
+import { NoteModerationService } from '@/core/NoteModerationService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 
@@ -95,6 +96,12 @@ export const meta = {
 			message: 'No such user.',
 			code: 'NO_SUCH_USER',
 			id: 'fcd2eef9-a9b2-4c4f-8624-038099e90aa5',
+		},
+
+		noSuchFlag: {
+			message: 'No such flag.',
+			code: 'NO_SUCH_FLAG',
+			id: '421abc62-b0c9-519e-93f2-2110f413a998', // UUIDv5: 'ns:api.geoplanetary.net/errors/NO_SUCH_FLAG'
 		},
 
 		uriNull: {
@@ -196,6 +203,7 @@ export const paramDef = {
 		mutedInstances: { type: 'array', items: {
 			type: 'string',
 		} },
+		mutedFlagIds: { type: 'array', items: { type: 'string', format: 'misskey:id' } },
 		notificationRecieveConfig: {
 			type: 'object',
 			nullable: false,
@@ -261,6 +269,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private apiLoggerService: ApiLoggerService,
 		private hashtagService: HashtagService,
 		private roleService: RoleService,
+		private noteModerationService: NoteModerationService,
 		private cacheService: CacheService,
 		private httpRequestService: HttpRequestService,
 		private avatarDecorationService: AvatarDecorationService,
@@ -343,6 +352,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				profileUpdates.hardMutedWords = ps.hardMutedWords;
 			}
 			if (ps.mutedInstances !== undefined) profileUpdates.mutedInstances = ps.mutedInstances;
+			if (ps.mutedFlagIds !== undefined) {
+				const flags = new Set((await this.noteModerationService.getAllFlags()).filter(f => f.isPublic).map(f => f.id));
+				if (!flags.isSupersetOf(new Set(ps.mutedFlagIds))) {
+					throw new ApiError(meta.errors.noSuchFlag);
+				}
+				profileUpdates.mutedFlagIds = ps.mutedFlagIds;
+			}
 			if (ps.notificationRecieveConfig !== undefined) profileUpdates.notificationRecieveConfig = ps.notificationRecieveConfig;
 			if (typeof ps.isLocked === 'boolean') updates.isLocked = ps.isLocked;
 			if (typeof ps.isExplorable === 'boolean') updates.isExplorable = ps.isExplorable;
@@ -587,7 +603,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				await this.userProfilesRepository.createQueryBuilder('profile').update()
 					.where('userId = :userId', { userId: user.id })
 					.set({
-						verifiedLinks: () => `array_append("verifiedLinks", :url)`,
+						verifiedLinks: () => 'array_append("verifiedLinks", :url)',
 					})
 					.setParameter('url', url)
 					.execute();
