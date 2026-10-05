@@ -286,10 +286,10 @@ export class NoteModerationService implements OnApplicationShutdown {
 		}
 
 		return {
-			masked: aggregatePolicy('masked', v => v.every(i => i.value)),
+			masked: aggregatePolicy('masked', v => v.some(i => i.value)),
 			defaultMuted: aggregatePolicy('defaultMuted', v => v.some(i => i.value)),
-			enableReply: aggregatePolicy('enableReply', v => v.some(i => i.value)),
-			enableQuote: aggregatePolicy('enableQuote', v => v.some(i => i.value)),
+			enableReply: aggregatePolicy('enableReply', v => v.every(i => i.value)),
+			enableQuote: aggregatePolicy('enableQuote', v => v.every(i => i.value)),
 		};
 	}
 
