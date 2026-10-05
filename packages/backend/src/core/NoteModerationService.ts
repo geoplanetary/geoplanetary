@@ -240,10 +240,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 	public async getFlagsOfNote(noteId: model.MiNote['id']) {
 		const flags = await this.getAllFlags();
 		const poster = await this.noteUserCache.fetch(noteId, async () => (await this.notesRepository.findOneByOrFail({ id: noteId })).userId);
-		const expire = this.cacheMayExpireUsers.get(poster);
-		if (expire) {
-			this.noteFlagIdsCache.delete(poster);
-		}
+		const validCache = () => !(this.cacheMayExpireUsers.get(poster) ?? false);
 		const idset = await this.noteFlagIdsCache.fetch(noteId, async () => {
 			const assigned = new Set((await this.noteFlagAssignmentsByNoteCache.fetch(noteId)).map(v => v.flagId));
 			const note = await this.notesRepository.findOneByOrFail({ id: noteId });
@@ -266,7 +263,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 			} else {
 				return { manual: assigned, conditional: new Set() };
 			}
-		});
+		}, validCache);
 		return flags.filter(flag => (flag.target === 'manual' && idset.manual.has(flag.id)) || (flag.target === 'conditional' && idset.conditional.has(flag.id)));
 	}
 
