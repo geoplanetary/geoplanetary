@@ -1,3 +1,8 @@
+## 2026.10.0-geoplanetary.12b
+
+## Server
+- Fix: ユーザーロールのキャッシュが意図せず残っているのを修正
+
 ## 2026.10.0-geoplanetary.12a
 
 ### General
