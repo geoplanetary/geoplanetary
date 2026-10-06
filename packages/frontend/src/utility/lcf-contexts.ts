@@ -1,0 +1,235 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+import { defineComponent, h } from 'vue';
+import MkFolder from '@/components/MkFolder.vue';
+import MkObjectView from '@/components/MkObjectView.vue';
+import { i18n } from '@/i18n';
+
+export const LCFContexts = {
+	InspectionSubject: {
+		component: defineComponent(() => {
+			return () => h(MkFolder, null, {
+				label: () => [i18n.ts._lcfExpression.inputContext, ': ', h('code', 'InspectionSubject')],
+				default: () => h(MkObjectView, {
+					value: {
+						InspectionSubject: {
+							id: { type: 'string' },
+							replyId: { type: 'string | null' },
+							reply: {
+								type: 'record | null', properties: {
+									id: { type: 'string' },
+									replyId: { type: 'string | null' },
+									renoteId: { type: 'string | null' },
+									threadId: { type: 'string | null' },
+									text: { type: 'string | null' },
+									name: { type: 'string | null' },
+									cw: { type: 'string | null' },
+									userId: { type: 'string' },
+									localOnly: { type: 'boolean' },
+									reactionAcceptance: { type: 'string | null', in: ['likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'] },
+									renoteCount: { type: 'number' },
+									repliesCount: { type: 'number' },
+									clippedCount: { type: 'number' },
+									pageCount: { type: 'number' },
+									reactions: { type: 'record', elements: { type: 'number' } },
+									visibility: { type: 'string', in: ['public', 'home', 'followers', 'specified'] },
+									uri: { type: 'string | null' },
+									url: { type: 'string | null' },
+									fileIds: { type: 'array', elements: { type: 'string' } },
+									attachedFileTypes: { type: 'array', elements: { type: 'string' } },
+									emojis: { type: 'array', elements: { type: 'string' } },
+									tags: { type: 'array', elements: { type: 'string' } },
+									hasPoll: { type: 'boolean' },
+									channelId: { type: 'string | null' },
+								},
+							},
+							renoteId: { type: 'string | null' },
+							renote: {
+								type: 'record | null', properties: {
+									id: { type: 'string' },
+									replyId: { type: 'string | null' },
+									renoteId: { type: 'string | null' },
+									threadId: { type: 'string | null' },
+									text: { type: 'string | null' },
+									name: { type: 'string | null' },
+									cw: { type: 'string | null' },
+									userId: { type: 'string' },
+									localOnly: { type: 'boolean' },
+									reactionAcceptance: { type: 'string | null', in: ['likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'] },
+									renoteCount: { type: 'number' },
+									repliesCount: { type: 'number' },
+									clippedCount: { type: 'number' },
+									pageCount: { type: 'number' },
+									reactions: { type: 'record', elements: { type: 'number' } },
+									visibility: { type: 'string', in: ['public', 'home', 'followers', 'specified'] },
+									uri: { type: 'string | null' },
+									url: { type: 'string | null' },
+									fileIds: { type: 'array', elements: { type: 'string' } },
+									attachedFileTypes: { type: 'array', elements: { type: 'string' } },
+									emojis: { type: 'array', elements: { type: 'string' } },
+									tags: { type: 'array', elements: { type: 'string' } },
+									hasPoll: { type: 'boolean' },
+									channelId: { type: 'string | null' },
+								},
+							},
+							threadId: { type: 'string | null' },
+							text: { type: 'string | null' },
+							name: { type: 'string | null' },
+							cw: { type: 'string | null' },
+							userId: { type: 'string' },
+							user: {
+								type: 'record', properties: {
+									id: { type: 'string' },
+									username: { type: 'string' },
+									host: { type: 'string | null' },
+									isBot: { type: 'boolean' },
+									isCat: { type: 'boolean' },
+									roles: {
+										type: 'array', element: {
+											type: 'record', properties: {
+												id: { type: 'string' },
+												updatedAt: { type: 'number' },
+												lastUsedAt: { type: 'number' },
+												name: { type: 'string' },
+												description: { type: 'string' },
+												color: { type: 'string | null' },
+												iconUrl: { type: 'string | null' },
+												target: { type: 'string', in: ['manual', 'conditional'] },
+												condFormula: { type: 'record' },
+												isPublic: { type: 'boolean' },
+												asBadge: { type: 'boolean' },
+												isModerator: { type: 'boolean' },
+												isAdministrator: { type: 'boolean' },
+												isExplorable: { type: 'boolean' },
+												preserveAssignmentOnMoveAccount: { type: 'boolean' },
+												canEditMembersByModerator: { type: 'boolean' },
+												displayOrder: { type: 'number' },
+												policies: {
+													type: 'record', elements: {
+														type: 'record', properties:
+															{ useDefault: 'boolean', priority: 'number', value: 'any' },
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							localOnly: { type: 'boolean' },
+							reactionAcceptance: { type: 'string | null', in: ['likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'] },
+							renoteCount: { type: 'number' },
+							repliesCount: { type: 'number' },
+							clippedCount: { type: 'number' },
+							pageCount: { type: 'number' },
+							reactions: { type: 'record', elements: { type: 'number' } },
+							visibility: { type: 'string', in: ['public', 'home', 'followers', 'specified'] },
+							uri: { type: 'string | null' },
+							url: { type: 'string | null' },
+							fileIds: { type: 'array', elements: { type: 'string' } },
+							files: {
+								type: 'array', element: {
+									type: 'record', properties: {
+										id: { type: 'string' },
+										userId: { type: 'string | null' },
+										userHost: { type: 'string | null' },
+										md5: { type: 'string' },
+										name: { type: 'string' },
+										type: { type: 'string' },
+										size: { type: 'number' },
+										comment: { type: 'string | null' },
+										blurhash: { type: 'string | null' },
+										properties: {
+											type: 'record', properties: {
+												width: { type: 'number', optional: true },
+												height: { type: 'number', optional: true },
+												orientation: { type: 'number', optional: true },
+												avgColor: { type: 'string', optional: true },
+											},
+										},
+										storedInternal: { type: 'boolean' },
+										url: { type: 'string' },
+										thumbnailUrl: { type: 'string | null' },
+										webpublicUrl: { type: 'string | null' },
+										webpublicType: { type: 'string | null' },
+										accessKey: { type: 'string | null' },
+										thumbnailAccessKey: { type: 'string | null' },
+										webpublicAccessKey: { type: 'string | null' },
+										uri: { type: 'string | null' },
+										src: { type: 'string | null' },
+										folderId: { type: 'string | null' },
+										isSensitive: { type: 'boolean' },
+										maybeSensitive: { type: 'boolean' },
+										maybePorn: { type: 'boolean' },
+										isLink: { type: 'boolean' },
+										requestHeaders: { type: 'record | null', emelents: { type: 'string' } },
+										requestIp: { type: 'string | null' },
+									},
+								},
+							},
+							attachedFileTypes: { type: 'array', elements: { type: 'string' } },
+							mentions: {
+								type: 'array', elements: {
+									type: 'record', properties: {
+										username: { type: 'string' },
+										host: { type: 'string | null' },
+									},
+								},
+							},
+							emojis: { type: 'array', elements: { type: 'string' } },
+							tags: { type: 'array', elements: { type: 'string' } },
+							hasPoll: { type: 'boolean' },
+							poll: {
+								type: 'record | null', properties: {
+									expiresAt: { type: 'number | null' },
+									multiple: { type: 'boolean' },
+									choices: { type: 'array', elements: { type: 'string' } },
+									votes: { type: 'number[]' },
+								},
+							},
+							channelId: { type: 'string | null' },
+							channel: {
+								type: 'record | null', properties: {
+									id: { type: 'string' },
+									lastNotedAt: { type: 'number | null' },
+									userId: { type: 'string | null' },
+									name: { type: 'string' },
+									description: { type: 'string | null' },
+									bannerId: { type: 'string | null' },
+									pinnedNoteIds: { type: 'array', elements: { type: 'string' } },
+									color: { type: 'string' },
+									isArchived: { type: 'boolean' },
+									notesCount: { type: 'number' },
+									usersCount: { type: 'number' },
+									isSensitive: { type: 'boolean' },
+									allowRenoteToExternal: { type: 'boolean' },
+								},
+							},
+							flags: {
+								type: 'array', elements: {
+									type: 'record', properties: {
+										id: { type: 'string' },
+										updatedAt: { type: 'number' },
+										name: { type: 'string' },
+										description: { type: 'string' },
+										color: { type: 'string | null' },
+										iconUrl: { type: 'string | null' },
+										isPublic: { type: 'boolean' },
+										asBadge: { type: 'boolean' },
+										canAssignByUser: { type: 'boolean' },
+										displayOrder: { type: 'number' },
+										target: { type: 'string', in: ['manual', 'conditional'] },
+										condFormula: { type: 'string' },
+										policies: { type: 'record' },
+									},
+								},
+							},
+						},
+					},
+				}),
+			});
+		}),
+	},
+} as const;

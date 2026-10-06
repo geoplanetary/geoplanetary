@@ -660,14 +660,14 @@ export const LCFExpression = (() => {
 							const se = findCloseQuot(expr, si + 1);
 							if (se === -1) throw Error('Parse error as context filter expression. Expected \'"\', but reached EOF.');
 							pos = se + 1;
-							return { done: false, value: { type: 'str_literal', content: expr.substring(si + 1, se), level: level() } };
+							return { done: false, value: { type: 'str_literal', content: expr.substring(si + 1, se).replaceAll('\\"', '"'), level: level() } };
 						}
 						case c === '/': {
 							const se = findCloseRegex(expr, si + 1);
 							if (se === -1) throw Error('Parse error as context filter expression. Expected \'/\', but reached EOF.');
 							const fe = findNotIn(expr, identCharset, se + 1, c => c.toLowerCase());
 							pos = fe;
-							return { done: false, value: { type: 'regexp_literal', content: expr.substring(si + 1, se), flags: expr.substring(se + 1, fe), level: level() } };
+							return { done: false, value: { type: 'regexp_literal', content: expr.substring(si + 1, se).replaceAll('\\/', '/'), flags: expr.substring(se + 1, fe), level: level() } };
 						}
 						case numberHeadCharset.has(c): {
 							const se = findNotIn(expr, numberCharset, si + 1);
@@ -1183,8 +1183,9 @@ export const LCFExpression = (() => {
 				}
 				case 'predicate': {
 					const f = (options?.predicateDefs ?? compilerDefaults.predicateDefs)[el.key];
+					const subexprs = el.args.map((v) => compile(v, options));
 					if (f === undefined) throw Error(`Undefined predicate "${el.key}"`);
-					return (item: LCFExpressionValueType) => f(item, el.args.map((v) => compile(v, options)), options?.throwOnTypeError ?? compilerDefaults.throwOnTypeError);
+					return (item: LCFExpressionValueType) => f(item, subexprs, options?.throwOnTypeError ?? compilerDefaults.throwOnTypeError);
 				}
 				case 'array': {
 					const sub = el.value.map((v) => compile(v, options));

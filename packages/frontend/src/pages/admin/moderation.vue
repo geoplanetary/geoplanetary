@@ -75,10 +75,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkTextarea v-model="sensitiveWords">
 								<template #caption>
 									<div>{{ i18n.ts.sensitiveWordsDescription }}<br>{{ i18n.ts.sensitiveWordsDescription2 }}</div>
-									<MkFolder>
-										<template #label>{{ i18n.ts._lcfExpression.inputContext }}: <code>InspectionSubject</code></template>
-										<MkCode lang="typescript" :code="'type InspectionSubject = {\n\tuserId: MiUser[\'id\'];\n\ttext: string | null;\n\treply: MiNote | null;\n\trenote: MiNote | null;\n\tfiles: MiDriveFile[] | null;\n\tmentions: { username: string; host: string | null; }[];\n\ttags: string[];\n\troles: MiRole[];\n}'"></MkCode>
-									</MkFolder>
+									<LCFContexts.InspectionSubject.component/>
 								</template>
 							</MkTextarea>
 							<MkButton primary @click="save_sensitiveWords">{{ i18n.ts.save }}</MkButton>
@@ -95,10 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkTextarea v-model="prohibitedWords">
 								<template #caption>
 									<div>{{ i18n.ts.prohibitedWordsDescription }}<br>{{ i18n.ts.prohibitedWordsDescription2 }}</div>
-									<MkFolder>
-										<template #label>{{ i18n.ts._lcfExpression.inputContext }}: <code>InspectionSubject</code></template>
-										<MkCode lang="typescript" :code="'type InspectionSubject = {\n\tuserId: MiUser[\'id\'];\n\ttext: string | null;\n\treply: MiNote | null;\n\trenote: MiNote | null;\n\tfiles: MiDriveFile[] | null;\n\tmentions: { username: string; host: string | null; }[];\n\ttags: string[];\n\troles: MiRole[];\n}'"></MkCode>
-									</MkFolder>
+									<LCFContexts.InspectionSubject.component/>
 								</template>
 							</MkTextarea>
 							<MkButton primary @click="save_prohibitedWords">{{ i18n.ts.save }}</MkButton>
@@ -215,7 +209,7 @@ import MkButton from '@/components/MkButton.vue';
 import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSelect from '@/components/MkSelect.vue';
-import MkCode from '@/components/MkCode.vue';
+import { LCFContexts } from '@/utility/lcf-contexts.js';
 
 const meta = await misskeyApi('admin/meta');
 

@@ -7,6 +7,7 @@ import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { decode } from 'blurhash';
 import { LCFAST, LCFExpression, LCFExpressionRecordType, LCFExpressionValueType, LCFPredicateDefinitionList, defaultPredicateLib } from '@geoplanetary/lcf-expression';
 import Redis from 'ioredis';
+import { In } from 'typeorm';
 import { FILE_TYPE_BROWSERSAFE } from '@/const.js';
 import { bindThis } from '@/decorators.js';
 import { DI } from '@/di-symbols.js';
@@ -21,16 +22,22 @@ import { IdService } from './IdService.js';
 import { ModerationLogService } from './ModerationLogService.js';
 import { RoleService } from './RoleService.js';
 import { UtilityService } from './UtilityService.js';
+import { DriveFileEntityService } from './entities/DriveFileEntityService.js';
 
-export type InspectionSubject = {
-	userId: model.MiUser['id'];
-	text: string | null;
-	reply: model.MiNote | null;
-	renote: model.MiNote | null;
-	files: model.MiDriveFile[] | null;
+export type InspectionSubject = Pick<model.MiNote, 'replyId' | 'renoteId' | 'threadId' | 'text' | 'name' | 'cw' | 'userId' | 'localOnly' | 'reactionAcceptance' | 'renoteCount' | 'repliesCount' | 'clippedCount' | 'pageCount' | 'reactions' | 'visibility' | 'uri' | 'url' | 'fileIds' | 'attachedFileTypes' | 'emojis' | 'tags' | 'hasPoll' | 'channelId' | 'channel'> & Partial<Pick<model.MiNote, 'id'>> & {
+	user: {
+		id: model.MiUser['id'];
+		username: model.MiUser['username'];
+		host: model.MiUser['host'];
+		isBot: model.MiUser['isBot'];
+		isCat: model.MiUser['isCat'];
+		roles: model.MiRole[];
+	},
+	reply: Pick<model.MiNote, 'id' | 'replyId' | 'renoteId' | 'threadId' | 'text' | 'name' | 'cw' | 'userId' | 'localOnly' | 'reactionAcceptance' | 'renoteCount' | 'repliesCount' | 'clippedCount' | 'pageCount' | 'reactions' | 'visibility' | 'uri' | 'url' | 'fileIds' | 'attachedFileTypes' | 'emojis' | 'tags' | 'hasPoll' | 'channelId'> | null;
+	renote: Pick<model.MiNote, 'id' | 'replyId' | 'renoteId' | 'threadId' | 'text' | 'name' | 'cw' | 'userId' | 'localOnly' | 'reactionAcceptance' | 'renoteCount' | 'repliesCount' | 'clippedCount' | 'pageCount' | 'reactions' | 'visibility' | 'uri' | 'url' | 'fileIds' | 'attachedFileTypes' | 'emojis' | 'tags' | 'hasPoll' | 'channelId'> | null;
 	mentions: { username: string; host: string | null; }[];
-	tags: string[];
-	roles: model.MiRole[];
+	files: model.MiDriveFile[] | null;
+	poll: Pick<model.MiPoll, 'expiresAt' | 'multiple' | 'choices' | 'votes'> | null;
 	flags: model.MiNoteFlag[];
 };
 
@@ -50,6 +57,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 	private noteFlagAssignmentsByNoteCache: RedisKVCache<model.MiNoteFlagAssignment[]>;
 	private noteFlagIdsCache: MemoryKVCache<{ manual: Set<model.MiNoteFlag['id']>, conditional: Set<model.MiNoteFlag['id']> }>;
 	private cacheMayExpireUsers: MemoryKVCache<true>;
+	private cacheMayExpireFlags: MemorySingleCache<true>;
 	private userMutingFlagIdCache: MemoryKVCache<Set<model.MiNoteFlag['id']>>;
 	private prohibitedWords: string[];
 	private prohibitedNoteExpr: LCFAST[];
@@ -115,6 +123,15 @@ export class NoteModerationService implements OnApplicationShutdown {
 		@Inject(DI.notesRepository)
 		private notesRepository: model.NotesRepository,
 
+		@Inject(DI.driveFilesRepository)
+		private driveFilesRepository: model.DriveFilesRepository,
+
+		@Inject(DI.channelsRepository)
+		private channelsRepository: model.ChannelsRepository,
+
+		@Inject(DI.pollsRepository)
+		private pollsRepository: model.PollsRepository,
+
 		@Inject(DI.noteFlagsRepository)
 		private noteFlagsRepository: model.NoteFlagsRepository,
 
@@ -127,6 +144,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 		private moderationLogService: ModerationLogService,
 		private roleService: RoleService,
 		private utilityService: UtilityService,
+		private driveFileEntityService: DriveFileEntityService,
 	) {
 		// todo. キャッシュのライフタイム、設定に書き起こしてもよさそう？
 		this.noteUserCache = new MemoryKVCache<model.MiNote['userId']>(1000 * 60); // 1min
@@ -140,6 +158,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 		});
 		this.noteFlagIdsCache = new MemoryKVCache<{ manual: Set<model.MiNoteFlag['id']>, conditional: Set<model.MiNoteFlag['id']> }>(1000 * 60); // 1min
 		this.cacheMayExpireUsers = new MemoryKVCache<true>(1000 * 60); // = noteFlagIdsCache.constructor.lifetime
+		this.cacheMayExpireFlags = new MemorySingleCache<true>(1000 * 60); // = noteFlagIdsCache.constructor.lifetime
 		this.userMutingFlagIdCache = new MemoryKVCache<Set<model.MiNoteFlag['id']>>(1000 * 60 * 5); // 5min
 
 		this.updateProhibitedWords();
@@ -159,6 +178,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 					break;
 				}
 				case 'noteFlagCreated': {
+					this.cacheMayExpireFlags.set(true);
 					const cache = this.noteFlagsCache.get();
 					if (cache) {
 						cache.push({
@@ -169,6 +189,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 					break;
 				}
 				case 'noteFlagUpdated': {
+					this.cacheMayExpireFlags.set(true);
 					const cache = this.noteFlagsCache.get();
 					const i = cache?.findIndex(v => v.id === body.id);
 					if (cache && i && i >= 0) {
@@ -180,6 +201,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 					break;
 				}
 				case 'noteFlagDeleted': {
+					this.cacheMayExpireFlags.set(true);
 					const cache = this.noteFlagsCache.get();
 					if (cache) {
 						this.noteFlagsCache.set(cache.filter(v => v.id !== body.id));
@@ -240,23 +262,26 @@ export class NoteModerationService implements OnApplicationShutdown {
 	public async getFlagsOfNote(noteId: model.MiNote['id']) {
 		const flags = await this.getAllFlags();
 		const poster = await this.noteUserCache.fetch(noteId, async () => (await this.notesRepository.findOneByOrFail({ id: noteId })).userId);
-		const validCache = () => !(this.cacheMayExpireUsers.get(poster) ?? false);
+		const validCache = () => !(this.cacheMayExpireUsers.get(poster) ?? false) && !(this.cacheMayExpireFlags.get() ?? false);
 		const idset = await this.noteFlagIdsCache.fetch(noteId, async () => {
 			const assigned = new Set((await this.noteFlagAssignmentsByNoteCache.fetch(noteId)).map(v => v.flagId));
-			const note = await this.notesRepository.findOneByOrFail({ id: noteId });
-			const user = await this.cacheService.findUserById(note.userId);
-			const roles = await this.roleService.getUserRoles(note.userId);
 			const conditionalFlags = flags.filter(flags => flags.target === 'conditional' && flags.condFormula);
 			if (conditionalFlags.length > 0) {
+				const note = await this.notesRepository.findOneByOrFail({ id: noteId });
+				const [reply, renote, channel, files, user, roles, mentions, poll] = await Promise.all([
+					(async () => note.replyId ? await this.notesRepository.findOneByOrFail({ id: note.replyId }) : null)(),
+					(async () => note.renoteId ? await this.notesRepository.findOneByOrFail({ id: note.renoteId }) : null)(),
+					(async () => note.channelId ? await this.channelsRepository.findOneByOrFail({ id: note.channelId }) : null)(),
+					this.driveFilesRepository.findBy({ id: In(note.fileIds) }),
+					this.cacheService.findUserById(note.userId),
+					this.roleService.getUserRoles(note.userId),
+					Promise.all(note.mentions.map(i => this.cacheService.findUserById(i))),
+					(async () => note.hasPoll ? this.pollsRepository.findOneByOrFail({ noteId: note.id }) : null)(),
+				]);
 				const compiler = new LCFExpression({ predicateDefs: NoteModerationService.lcfPredicates, throwOnTypeError: false });
 				const matched = new Set(conditionalFlags.filter(flag => {
 					try {
-						return compiler.compile(compiler.parse(flag.condFormula))({
-							...note,
-							user: { ...user, roles: roles.map(o => { return { ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType; }) },
-							roles: roles.map(v => ({ ...v, updatedAt: v.updatedAt.valueOf(), lastUsedAt: v.lastUsedAt.valueOf() })),
-							flags: [...assigned.values()],
-						} as LCFExpressionRecordType);
+						return this.evalNoteExpr({ ...note, user: { ...user, roles }, reply, renote, channel, mentions, files, poll, flags }, [compiler.parse(flag.condFormula)]);
 					} catch (_) { return false; }
 				}).map(flag => flag.id));
 				return { manual: assigned, conditional: matched };
@@ -456,14 +481,14 @@ export class NoteModerationService implements OnApplicationShutdown {
 	private evalNoteExpr(subject: InspectionSubject, expr: LCFAST[]): boolean {
 		if (expr.length <= 0) return false;
 		try {
-			return LCFExpression.toBoolean(expr.map(i => LCFExpression.compile(i, { throwOnTypeError: false, predicateDefs: NoteModerationService.lcfPredicates })).some(e => e({
-				...subject,
-				reply: subject.reply ? { ...subject.reply } as LCFExpressionRecordType : null,
-				renote: subject.renote ? { ...subject.renote } as LCFExpressionRecordType : null,
-				files: subject.files ? subject.files.map(o => ({ ...o } as LCFExpressionRecordType)) : null,
-				roles: subject.roles.map(o => ({ ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType)),
-				flags: subject.flags.map(o => ({ ...o, updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType)),
-			})));
+			const df = (df: model.MiDriveFile) => ({ ...df, user: null, folder: null } satisfies LCFExpressionRecordType);
+			const r = (r: model.MiRole) => ({ ...r, updatedAt: r.updatedAt.valueOf(), lastUsedAt: r.lastUsedAt.valueOf() } satisfies LCFExpressionRecordType);
+			const u = (u: InspectionSubject['user']) => ({ ...u, roles: u.roles.map(r) } satisfies LCFExpressionRecordType);
+			const c = (c: model.MiChannel) => ({ ...c, lastNotedAt: c.lastNotedAt?.valueOf() ?? null, user: null, banner: null } satisfies LCFExpressionRecordType);
+			const p = (p: InspectionSubject['poll']) => p ? ({ ...p, expiresAt: p.expiresAt?.valueOf() ?? null } satisfies LCFExpressionRecordType) : null;
+			const nf = (nf: model.MiNoteFlag) => ({ ...nf, updatedAt: nf.updatedAt.valueOf() } satisfies LCFExpressionRecordType);
+			const o = { ...subject, user: u(subject.user), channel: subject.channel ? c(subject.channel) : null, files: subject.files ? subject.files.map(df) : null, poll: p(subject.poll), flags: subject.flags.map(nf) } satisfies LCFExpressionRecordType;
+			return LCFExpression.toBoolean(expr.map(i => LCFExpression.compile(i, { throwOnTypeError: false, predicateDefs: NoteModerationService.lcfPredicates })).some(e => e(o)));
 		} catch (_err) {
 			return false;
 		}
@@ -502,7 +527,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 					return !this.evalcond(subject, blurhashes, formula.value);
 				}
 				case 'roleAssignedTo': {
-					return subject.roles.some(r => r.id === formula.roleId);
+					return subject.user.roles.some(r => r.id === formula.roleId);
 				}
 				case 'hasText': {
 					return subject.text != null;
