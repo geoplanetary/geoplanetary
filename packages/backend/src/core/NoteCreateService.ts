@@ -121,17 +121,17 @@ class NotificationManager {
 				break;
 
 			case 'followers': {
-			// TODO: フォロワー限定ノートにフォロワーではない人がメンションされた場合通知されるのが正しい挙動なのか確認（一部に挙動の不一致がありそう）。現状は通知されるためフィルタしない
-			// 	const targetUserIds = this.queue.map(x => x.target);
-			// 	const followers = await this.followingsRepository.find({
-			// 		where: {
-			// 			followeeId: this.note.userId,
-			// 			followerId: In(targetUserIds),
-			// 			isFollowerHibernated: false,
-			// 		},
-			// 		select: ['followerId'],
-			// 	});
-			// 	visibleUserIds = new Set(followers.map(f => f.followerId));
+				// TODO: フォロワー限定ノートにフォロワーではない人がメンションされた場合通知されるのが正しい挙動なのか確認（一部に挙動の不一致がありそう）。現状は通知されるためフィルタしない
+				// 	const targetUserIds = this.queue.map(x => x.target);
+				// 	const followers = await this.followingsRepository.find({
+				// 		where: {
+				// 			followeeId: this.note.userId,
+				// 			followerId: In(targetUserIds),
+				// 			isFollowerHibernated: false,
+				// 		},
+				// 		select: ['followerId'],
+				// 	});
+				// 	visibleUserIds = new Set(followers.map(f => f.followerId));
 				visibleUserIds = null;
 				break;
 			}
@@ -710,15 +710,37 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		const roles = await this.roleService.getUserRoles(user.id);
 		const moderationSubject: InspectionSubject = {
-			userId: user.id,
+			replyId: data.reply ? data.reply.id : null,
+			renoteId: data.renote ? data.renote.id : null,
+			threadId: data.reply ? data.reply.threadId ?? data.reply.id : null,
 			text: data.text,
+			name: data.name ?? null,
+			cw: data.cw ?? null,
+			userId: user.id,
+			localOnly: data.localOnly ?? false,
+			reactionAcceptance: data.reactionAcceptance ?? null,
+			renoteCount: 0,
+			repliesCount: 0,
+			clippedCount: 0,
+			pageCount: 0,
+			reactions: {},
+			visibility: (data.visibility ?? 'public') as 'public' | 'home' | 'followers' | 'specified',
+			uri: data.uri ?? null,
+			url: data.url ?? null,
+			fileIds: (data.files ?? []).map(f => f.id),
+			attachedFileTypes: (data.files ?? []).map(f => f.type),
+			emojis,
+			tags: tags,
+			hasPoll: data.poll != null,
+			channelId: data.channel ? data.channel.id : null,
+			channel: data.channel ?? null,
+			user: { ...user, roles },
 			reply: data.reply ?? null,
 			renote: data.renote ?? null,
 			mentions: mentionedUsers.map(v => { return { username: v.username, host: v.host }; }),
-			tags: tags,
 			files: data.files ?? null,
-			roles,
-			flags: [],
+			poll: data.poll ? { ...data.poll, votes: data.poll.choices.map((_) => 0) } : null,
+			flags: data.flags ?? [],
 		};
 
 		if (data.visibility === 'public' && this.noteModerationService.evalSensitiveNoteExpr(moderationSubject)) {
