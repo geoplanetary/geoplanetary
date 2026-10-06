@@ -21,6 +21,7 @@ import { IdService } from './IdService.js';
 import { ModerationLogService } from './ModerationLogService.js';
 import { RoleService } from './RoleService.js';
 import { UtilityService } from './UtilityService.js';
+import { DriveFileEntityService } from './entities/DriveFileEntityService.js';
 
 export type InspectionSubject = {
 	userId: model.MiUser['id'];
@@ -127,6 +128,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 		private moderationLogService: ModerationLogService,
 		private roleService: RoleService,
 		private utilityService: UtilityService,
+		private driveFileEntityService: DriveFileEntityService,
 	) {
 		// todo. キャッシュのライフタイム、設定に書き起こしてもよさそう？
 		this.noteUserCache = new MemoryKVCache<model.MiNote['userId']>(1000 * 60); // 1min
@@ -244,6 +246,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 		const idset = await this.noteFlagIdsCache.fetch(noteId, async () => {
 			const assigned = new Set((await this.noteFlagAssignmentsByNoteCache.fetch(noteId)).map(v => v.flagId));
 			const note = await this.notesRepository.findOneByOrFail({ id: noteId });
+			const files = await this.driveFileEntityService.packManyByIds(note.fileIds);
 			const user = await this.cacheService.findUserById(note.userId);
 			const roles = await this.roleService.getUserRoles(note.userId);
 			const conditionalFlags = flags.filter(flags => flags.target === 'conditional' && flags.condFormula);
@@ -254,6 +257,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 						return compiler.compile(compiler.parse(flag.condFormula))({
 							...note,
 							user: { ...user, roles: roles.map(o => { return { ...o, lastUsedAt: o.lastUsedAt.valueOf(), updatedAt: o.updatedAt.valueOf() } as LCFExpressionRecordType; }) },
+							files,
 							roles: roles.map(v => ({ ...v, updatedAt: v.updatedAt.valueOf(), lastUsedAt: v.lastUsedAt.valueOf() })),
 							flags: [...assigned.values()],
 						} as LCFExpressionRecordType);
