@@ -52,14 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkTextarea v-model="flag.condFormula">
 			<template #label>{{ i18n.ts._noteFlag.condition }}</template>
 			<template #caption>
-				<MkFolder>
-					<template #label>{{ i18n.ts._lcfExpression.inputContext }}: <code>InspectionSubject</code></template>
-					<MkCode
-						lang="typescript"
-						:code="'type InspectionSubject = {\n\tuserId: MiUser[\'id\'];\n\ttext: string | null;\n\treply: MiNote | null;\n\trenote: MiNote | null;\n\tfiles: MiDriveFile[] | null;\n\tmentions: { username: string; host: string | null; }[];\n\ttags: string[];\n\troles: MiRole[];\n}'"
-					>
-					</MkCode>
-				</MkFolder>
+				<LCFContexts.InspectionSubject.component/>
 			</template>
 		</MkTextarea>
 	</template>
@@ -85,9 +78,7 @@ import { watch, ref } from 'vue';
 import { throttle } from 'throttle-debounce';
 import * as Mi from 'misskey-js';
 import type { MkSelectItem } from '@/components/MkSelect.vue';
-import MkCode from '@/components/MkCode.vue';
 import MkColorInput from '@/components/MkColorInput.vue';
-import MkFolder from '@/components/MkFolder.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkKeyValue from '@/components/MkKeyValue.vue';
 import MkSelect from '@/components/MkSelect.vue';
@@ -95,6 +86,7 @@ import MkSwitch from '@/components/MkSwitch.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 import { i18n } from '@/i18n.js';
 import { deepClone } from '@/utility/clone.js';
+import { LCFContexts } from '@/utility/lcf-contexts';
 
 export type NoteFlagLike = Pick<Mi.entities.NoteFlag, 'name' | 'description' | 'color' | 'iconUrl' | 'canAssignByUser' | 'displayOrder' | 'isPublic' | 'asBadge' | 'target' | 'condFormula' | 'policies'> & {
 	id?: Mi.entities.NoteFlag['id'] | null;

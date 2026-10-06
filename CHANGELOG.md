@@ -8,6 +8,9 @@
 ## Server
 - Fix: ノートフラグのキャッシングの改善
 
+### Client
+- Enhance: LCFコンテキストマニュアルをコンポーネント化
+
 
 ## 2026.10.0-geoplanetary.12b
 
