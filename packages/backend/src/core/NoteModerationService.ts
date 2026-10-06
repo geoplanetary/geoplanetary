@@ -51,6 +51,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 	private noteFlagAssignmentsByNoteCache: RedisKVCache<model.MiNoteFlagAssignment[]>;
 	private noteFlagIdsCache: MemoryKVCache<{ manual: Set<model.MiNoteFlag['id']>, conditional: Set<model.MiNoteFlag['id']> }>;
 	private cacheMayExpireUsers: MemoryKVCache<true>;
+	private cacheMayExpireFlags: MemorySingleCache<true>;
 	private userMutingFlagIdCache: MemoryKVCache<Set<model.MiNoteFlag['id']>>;
 	private prohibitedWords: string[];
 	private prohibitedNoteExpr: LCFAST[];
@@ -142,6 +143,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 		});
 		this.noteFlagIdsCache = new MemoryKVCache<{ manual: Set<model.MiNoteFlag['id']>, conditional: Set<model.MiNoteFlag['id']> }>(1000 * 60); // 1min
 		this.cacheMayExpireUsers = new MemoryKVCache<true>(1000 * 60); // = noteFlagIdsCache.constructor.lifetime
+		this.cacheMayExpireFlags = new MemorySingleCache<true>(1000 * 60); // = noteFlagIdsCache.constructor.lifetime
 		this.userMutingFlagIdCache = new MemoryKVCache<Set<model.MiNoteFlag['id']>>(1000 * 60 * 5); // 5min
 
 		this.updateProhibitedWords();
@@ -161,6 +163,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 					break;
 				}
 				case 'noteFlagCreated': {
+					this.cacheMayExpireFlags.set(true);
 					const cache = this.noteFlagsCache.get();
 					if (cache) {
 						cache.push({
@@ -171,6 +174,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 					break;
 				}
 				case 'noteFlagUpdated': {
+					this.cacheMayExpireFlags.set(true);
 					const cache = this.noteFlagsCache.get();
 					const i = cache?.findIndex(v => v.id === body.id);
 					if (cache && i && i >= 0) {
@@ -182,6 +186,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 					break;
 				}
 				case 'noteFlagDeleted': {
+					this.cacheMayExpireFlags.set(true);
 					const cache = this.noteFlagsCache.get();
 					if (cache) {
 						this.noteFlagsCache.set(cache.filter(v => v.id !== body.id));
@@ -242,7 +247,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 	public async getFlagsOfNote(noteId: model.MiNote['id']) {
 		const flags = await this.getAllFlags();
 		const poster = await this.noteUserCache.fetch(noteId, async () => (await this.notesRepository.findOneByOrFail({ id: noteId })).userId);
-		const validCache = () => !(this.cacheMayExpireUsers.get(poster) ?? false);
+		const validCache = () => !(this.cacheMayExpireUsers.get(poster) ?? false) && !(this.cacheMayExpireFlags.get() ?? false);
 		const idset = await this.noteFlagIdsCache.fetch(noteId, async () => {
 			const assigned = new Set((await this.noteFlagAssignmentsByNoteCache.fetch(noteId)).map(v => v.flagId));
 			const note = await this.notesRepository.findOneByOrFail({ id: noteId });
