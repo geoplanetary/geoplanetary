@@ -1183,8 +1183,9 @@ export const LCFExpression = (() => {
 				}
 				case 'predicate': {
 					const f = (options?.predicateDefs ?? compilerDefaults.predicateDefs)[el.key];
+					const subexprs = el.args.map((v) => compile(v, options));
 					if (f === undefined) throw Error(`Undefined predicate "${el.key}"`);
-					return (item: LCFExpressionValueType) => f(item, el.args.map((v) => compile(v, options)), options?.throwOnTypeError ?? compilerDefaults.throwOnTypeError);
+					return (item: LCFExpressionValueType) => f(item, subexprs, options?.throwOnTypeError ?? compilerDefaults.throwOnTypeError);
 				}
 				case 'array': {
 					const sub = el.value.map((v) => compile(v, options));
