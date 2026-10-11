@@ -268,7 +268,7 @@ export class NoteModerationService implements OnApplicationShutdown {
 			const conditionalFlags = flags.filter(flags => flags.target === 'conditional' && flags.condFormula);
 			if (conditionalFlags.length > 0) {
 				const note = await this.notesRepository.findOneByOrFail({ id: noteId });
-				const [reply, renote, channel, files, user, roles, mentions, poll] = await Promise.all([
+				const [reply, renote, channel, files, user, roles, mentions, poll, assignedFlags] = await Promise.all([
 					(async () => note.replyId ? await this.notesRepository.findOneByOrFail({ id: note.replyId }) : null)(),
 					(async () => note.renoteId ? await this.notesRepository.findOneByOrFail({ id: note.renoteId }) : null)(),
 					(async () => note.channelId ? await this.channelsRepository.findOneByOrFail({ id: note.channelId }) : null)(),
@@ -277,11 +277,12 @@ export class NoteModerationService implements OnApplicationShutdown {
 					this.roleService.getUserRoles(note.userId),
 					Promise.all(note.mentions.map(i => this.cacheService.findUserById(i))),
 					(async () => note.hasPoll ? this.pollsRepository.findOneByOrFail({ noteId: note.id }) : null)(),
+					flags.filter(f => assigned.has(f.id)),
 				]);
 				const compiler = new LCFExpression({ predicateDefs: NoteModerationService.lcfPredicates, throwOnTypeError: false });
 				const matched = new Set(conditionalFlags.filter(flag => {
 					try {
-						return this.evalNoteExpr({ ...note, user: { ...user, roles }, reply, renote, channel, mentions, files, poll, flags }, [compiler.parse(flag.condFormula)]);
+						return this.evalNoteExpr({ ...note, user: { ...user, roles }, reply, renote, channel, mentions, files, poll, flags: assignedFlags }, [compiler.parse(flag.condFormula)]);
 					} catch (_) { return false; }
 				}).map(flag => flag.id));
 				return { manual: assigned, conditional: matched };
