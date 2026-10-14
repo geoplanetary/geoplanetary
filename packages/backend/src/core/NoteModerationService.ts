@@ -269,8 +269,8 @@ export class NoteModerationService implements OnApplicationShutdown {
 			if (conditionalFlags.length > 0) {
 				const note = await this.notesRepository.findOneByOrFail({ id: noteId });
 				const [reply, renote, channel, files, user, roles, mentions, poll, assignedFlags] = await Promise.all([
-					(async () => note.replyId ? await this.notesRepository.findOneByOrFail({ id: note.replyId }) : null)(),
-					(async () => note.renoteId ? await this.notesRepository.findOneByOrFail({ id: note.renoteId }) : null)(),
+					(async () => note.replyId ? await this.notesRepository.findOneBy({ id: note.replyId }) : null)(),
+					(async () => note.renoteId ? await this.notesRepository.findOneBy({ id: note.renoteId }) : null)(),
 					(async () => note.channelId ? await this.channelsRepository.findOneByOrFail({ id: note.channelId }) : null)(),
 					this.driveFilesRepository.findBy({ id: In(note.fileIds) }),
 					this.cacheService.findUserById(note.userId),
