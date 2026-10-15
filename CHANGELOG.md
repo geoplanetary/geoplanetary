@@ -1,4 +1,4 @@
-## 2026.10.0-geoplanetary.12c
+## 2026.10.0-geoplanetary.12d
 
 ### General
 - Fix: ノートフラグのLCFコンテキストに代入されるフラグの内容が間違っているのを修正
