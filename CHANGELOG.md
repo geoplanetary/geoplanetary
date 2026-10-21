@@ -1,3 +1,11 @@
+## 2026.10.0-geoplanetary.12e
+
+### Note
+- Node.js の動作要件が変更となりました。
+	セキュリティパッチ適用のため、最低動作要件が `^22.23.4 || ^24.22.1 || ^26.12.1` となりました。
+	この変更はアップストリームでは [`27a426c0`](https://github.com/misskey-dev/misskey/commit/27a426c02d8b43fd5deec9f4fd9b653869ef8b35) で追跡されています。
+
+
 ## 2026.10.0-geoplanetary.12d
 
 ### General
