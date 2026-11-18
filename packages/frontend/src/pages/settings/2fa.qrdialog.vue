@@ -121,6 +121,7 @@ import MkLink from '@/components/MkLink.vue';
 import { confetti } from '@/utility/confetti.js';
 import { qrOptions } from '@/utility/qr-code.js';
 import { ensureSignin } from '@/i.js';
+import { claimAchievement } from '@/utility/achievements.js';
 
 const $i = ensureSignin();
 
@@ -172,6 +173,9 @@ function downloadBackupCodes() {
 }
 
 function allDone() {
+	if ($i && $i.twoFactorEnabled) {
+		claimAchievement('mfaEnabled');
+	}
 	dialog.value?.close();
 }
 </script>

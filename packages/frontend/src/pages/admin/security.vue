@@ -168,6 +168,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 				</SearchMarker>
 
+				<SearchMarker v-slot="slotProps" :keywords="['banned', 'email', 'blacklist']">
+					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
+						<template #label>Banned Email Addresses</template>
+						<template v-if="bannedEmailsForm.modified.value" #footer>
+							<MkFormFooter :form="bannedEmailsForm"/>
+						</template>
+
+						<div class="_gaps_m">
+							<SearchMarker>
+								<MkTextarea v-model="bannedEmailsForm.state.bannedEmails">
+									<template #label><SearchLabel>Banned Email Addresses List</SearchLabel></template>
+								</MkTextarea>
+							</SearchMarker>
+						</div>
+					</MkFolder>
+				</SearchMarker>
+
 				<SearchMarker v-slot="slotProps" :keywords="['log', 'ipAddress']">
 					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
 						<template #label><SearchLabel>Log IP address</SearchLabel></template>
@@ -278,6 +295,15 @@ const bannedEmailDomainsForm = useForm({
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
 		bannedEmailDomains: state.bannedEmailDomains.split('\n'),
+	});
+	fetchInstance(true);
+});
+
+const bannedEmailsForm = useForm({
+	bannedEmails: meta.bannedEmails?.join('\n') ?? '',
+}, async (state) => {
+	await os.apiWithDialog('admin/update-meta', {
+		bannedEmails: state.bannedEmails.split('\n'),
 	});
 	fetchInstance(true);
 });

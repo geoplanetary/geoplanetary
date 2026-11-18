@@ -18,6 +18,7 @@ import type { OnModuleInit } from '@nestjs/common';
 import type { UserEntityService } from './UserEntityService.js';
 import type { DriveFileEntityService } from './DriveFileEntityService.js';
 import type { NoteEntityService } from './NoteEntityService.js';
+import type { NoteModerationService } from '../NoteModerationService.js';
 
 @Injectable()
 export class NoteDraftEntityService implements OnModuleInit {
@@ -25,6 +26,7 @@ export class NoteDraftEntityService implements OnModuleInit {
 	private driveFileEntityService: DriveFileEntityService;
 	private idService: IdService;
 	private noteEntityService: NoteEntityService;
+	private noteModerationService: NoteModerationService;
 	private noteDraftLoader = new DebounceLoader(this.findNoteDraftOrFail);
 
 	constructor(
@@ -43,6 +45,7 @@ export class NoteDraftEntityService implements OnModuleInit {
 		this.driveFileEntityService = this.moduleRef.get('DriveFileEntityService');
 		this.idService = this.moduleRef.get('IdService');
 		this.noteEntityService = this.moduleRef.get('NoteEntityService');
+		this.noteModerationService = this.moduleRef.get('NoteModerationService');
 	}
 
 	@bindThis
@@ -102,6 +105,8 @@ export class NoteDraftEntityService implements OnModuleInit {
 			}
 		}
 
+		const assignableFlags = new Set((await this.noteModerationService.getAssignableFlags(me?.id)).map(f => f.id));
+
 		const packed: Packed<'NoteDraft'> = await awaitAll({
 			id: noteDraft.id,
 			createdAt: this.idService.parse(noteDraft.id).date.toISOString(),
@@ -135,6 +140,7 @@ export class NoteDraftEntityService implements OnModuleInit {
 				expiresAt: noteDraft.pollExpiresAt?.toISOString(),
 				expiredAfter: noteDraft.pollExpiredAfter,
 			} : null,
+			flagIds: noteDraft.flagIds.filter(f => assignableFlags.has(f)),
 
 			...(opts.detail ? {
 				reply: noteDraft.replyId ? nullIfEntityNotFound(this.noteEntityService.pack(noteDraft.replyId, me, {

@@ -1,0 +1,87 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+import { Inject, Injectable } from '@nestjs/common';
+import { Endpoint } from '@/server/api/endpoint-base.js';
+import type { NoteFlagsRepository, NotesRepository } from '@/models/_.js';
+import { DI } from '@/di-symbols.js';
+import { ApiError } from '@/server/api/error.js';
+import { NoteModerationService } from '@/core/NoteModerationService.js';
+import { IdentifiableError } from '@/misc/identifiable-error.js';
+
+export const meta = {
+	tags: ['admin', 'note-flag'],
+	description: 'Assign note flag to note.',
+
+	requireCredential: true,
+	requireModerator: true,
+	kind: 'write:admin:note-flags',
+
+	errors: {
+		noSuchFlag: {
+			message: 'No such flag.',
+			code: 'NO_SUCH_FLAG',
+			id: '421abc62-b0c9-519e-93f2-2110f413a998', // UUIDv5: 'ns:api.geoplanetary.net/errors/NO_SUCH_FLAG'
+		},
+
+		noSuchNote: {
+			message: 'No such note.',
+			code: 'NO_SUCH_NOTE',
+			id: '1f8bfed3-1ff7-56c8-9f3a-78f16db474bf', // UUIDv5: 'ns:api.geoplanetary.net/errors/NO_SUCH_NOTE'
+		},
+
+		alreadyAssigned: {
+			message: 'Already assigned.',
+			code: 'ALREADY_ASSIGNED',
+			id: '40169fec-e610-50ae-950e-b13d3524c60d', // UUIDv5: 'ns:api.geoplanetary.net/errors/ALREADY_ASSIGNED'
+		},
+	},
+} as const;
+
+export const paramDef = {
+	type: 'object',
+	properties: {
+		flagId: { type: 'string', format: 'misskey:id' },
+		noteId: { type: 'string', format: 'misskey:id' },
+	},
+	required: [
+		'flagId',
+		'noteId',
+	],
+} as const;
+
+@Injectable()
+export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
+	constructor(
+		@Inject(DI.notesRepository)
+		private notesRepository: NotesRepository,
+
+		@Inject(DI.noteFlagsRepository)
+		private noteFlagsRepository: NoteFlagsRepository,
+
+		private noteModerationService: NoteModerationService,
+	) {
+		super(meta, paramDef, async (ps, me) => {
+			const flag = await this.noteFlagsRepository.findOneBy({ id: ps.flagId });
+			if (flag == null || flag.target !== 'manual') {
+				throw new ApiError(meta.errors.noSuchFlag);
+			}
+
+			const note = await this.notesRepository.findOneBy({ id: ps.noteId });
+			if (note == null) {
+				throw new ApiError(meta.errors.noSuchNote);
+			}
+
+			try {
+				await this.noteModerationService.assignFlagToNote(note.id, flag.id, me);
+			} catch (err) {
+				if (err instanceof IdentifiableError) {
+					if (err.errorIs(NoteModerationService.FlagAlreadyAssignedError)) throw new ApiError(meta.errors.alreadyAssigned);
+				}
+				throw err;
+			}
+		});
+	}
+}

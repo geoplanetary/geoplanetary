@@ -23,13 +23,14 @@ import { computed, useTemplateRef } from 'vue';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import number from '@/filters/number.js';
+import { $i } from '@/i';
 
 const props = defineProps<{
 	textLength: number;
 }>();
 
-const maxTextLength = computed(() => {
-	return instance ? instance.maxNoteTextLength : 1000;
+const maxTextLength = computed((): number => {
+	return $i ? $i.policies.noteLengthLimit : instance.maxNoteTextLength;
 });
 
 const textCountPercentage = computed(() => {

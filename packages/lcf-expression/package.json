@@ -1,0 +1,28 @@
+{
+	"type": "module",
+	"name": "@geoplanetary/lcf-expression",
+	"version": "1.0.0-alpha.1",
+	"description": "",
+	"license": "Apache-2.0",
+	"private": true,
+	"main": "./built/index.js",
+	"types": "./built/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./built/index.js",
+			"types": "./built/index.d.ts",
+			"default": "./built/index.js"
+		},
+		"./*": {
+			"import": "./built/*",
+			"types": "./built/*",
+			"default": "./built/*"
+		}
+	},
+	"files": [
+		"built"
+	],
+	"scripts": {
+		"build": "tsc --project tsconfig.json --outDir built --declaration true"
+	}
+}

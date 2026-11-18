@@ -207,6 +207,10 @@ export async function mainBoot() {
 			}
 		}
 
+		if ($i.twoFactorEnabled) {
+			claimAchievement('mfaEnabled');
+		}
+
 		if (claimedAchievements.length >= 30) {
 			claimAchievement('collectAchievements30');
 		}

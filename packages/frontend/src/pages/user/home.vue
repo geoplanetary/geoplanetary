@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<span v-if="$i && $i.id != user.id && user.isFollowed" class="followed">{{ i18n.ts.followsYou }}</span>
 							<div class="actions">
 								<button class="menu _button" @click="menu"><i class="ti ti-dots"></i></button>
-								<MkFollowButton v-if="$i?.id != user.id" v-model:user="user" :inline="true" :transparent="false" :full="true" class="koudoku"/>
+								<MkFollowButton v-if="isFollowEnabled(user)" v-model:user="user" :inline="true" :transparent="false" :full="true" class="koudoku"/>
 							</div>
 						</div>
 						<MkAvatar class="avatar" :user="user" indicator/>
@@ -181,6 +181,7 @@ import { dateString } from '@/filters/date.js';
 import { confetti } from '@/utility/confetti.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/utility/isFfVisibleForMe.js';
+import { isFollowEnabled } from '@/utility/is-follow-enabled.js';
 import { useRouter } from '@/router.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
 import MkSparkle from '@/components/MkSparkle.vue';

@@ -9,11 +9,13 @@ import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiChannel } from './Channel.js';
 import { MiNote } from './Note.js';
+import { MiNoteFlag } from './NoteFlag.js';
 import type { MiDriveFile } from './DriveFile.js';
 
 @Entity('note_draft')
 @Index('IDX_NOTE_DRAFT_FILE_IDS', { synchronize: false }) // GIN for fileIds in production
 @Index('IDX_NOTE_DRAFT_VISIBLE_USER_IDS', { synchronize: false }) // GIN for visibleUserIds in production
+@Index('IDX_4906d78e3e3b665ed17e77191588', { synchronize: false }) // GIN for flagIds in production
 export class MiNoteDraft {
 	@PrimaryColumn(id())
 	public id: string;
@@ -152,6 +154,13 @@ export class MiNoteDraft {
 	public pollExpiredAfter: number | null;
 
 	//#endregion
+
+	@Index('IDX_4906d78e3e3b665ed17e77191588', { synchronize: false })
+	@Column({
+		...id(),
+		array: true, default: '{}',
+	})
+	public flagIds: MiNoteFlag['id'][];
 
 	// 予約日時
 	// これがあるだけでは実際に予約されているかどうかはわからない

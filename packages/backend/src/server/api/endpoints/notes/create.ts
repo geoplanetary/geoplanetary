@@ -10,6 +10,7 @@ import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { ApiError } from '../../error.js';
 
@@ -17,6 +18,8 @@ export const meta = {
 	tags: ['notes'],
 
 	requireCredential: true,
+
+	requireRolePolicy: 'canPostNote',
 
 	prohibitMoved: true,
 
@@ -112,16 +115,40 @@ export const meta = {
 			id: '33510210-8452-094c-6227-4a6c05d99f00',
 		},
 
+		restrictedByRole: {
+			message: 'This feature is restricted by your role.',
+			code: 'RESTRICTED_BY_ROLE',
+			id: '8feff0ba-5ab5-585b-31f4-4df816663fad',
+		},
+
+		tooLong: {
+			message: 'Cannot post notes longer than your role limit.',
+			code: 'NOTE_TOO_LONG_BY_ROLE_LIMIT',
+			id: '8c148117-4d13-4ada-8cf3-4d6286a2bf03',
+		},
+
 		containsProhibitedWords: {
 			message: 'Cannot post because it contains prohibited words.',
 			code: 'CONTAINS_PROHIBITED_WORDS',
 			id: 'aa6e01d3-a85c-669d-758a-76aab43af334',
 		},
 
+		matchedProhibitedPatterns: {
+			message: 'Cannot post because matches a pattern of prohibited posts.',
+			code: 'MATCHED_PROHIBITED_PATTERNS',
+			id: '80ddff6a-cf7a-4121-9318-120043300545',
+		},
+
 		containsTooManyMentions: {
 			message: 'Cannot post because it exceeds the allowed number of mentions.',
 			code: 'CONTAINS_TOO_MANY_MENTIONS',
 			id: '4de0363a-3046-481b-9b0f-feff3e211025',
+		},
+
+		restrictedByNotePolicy: {
+			message: 'This feature is restricted by note policy.',
+			code: 'RESTRICTED_BY_NOTE_POLICY',
+			id: 'e99e92d7-bed2-5033-aed2-252a2469c2f3', // UUIDv5: 'ns:api.geoplanetary.net/errors/RESTRICTED_BY_NOTE_POLICY'
 		},
 	},
 } as const;
@@ -130,9 +157,11 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		visibility: { type: 'string', enum: ['public', 'home', 'followers', 'specified'], default: 'public' },
-		visibleUserIds: { type: 'array', uniqueItems: true, items: {
-			type: 'string', format: 'misskey:id',
-		} },
+		visibleUserIds: {
+			type: 'array', uniqueItems: true, items: {
+				type: 'string', format: 'misskey:id',
+			},
+		},
 		cw: { type: 'string', nullable: true, minLength: 1, maxLength: 100 },
 		localOnly: { type: 'boolean', default: false },
 		reactionAcceptance: { type: 'string', nullable: true, enum: [null, 'likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'], default: null },
@@ -182,6 +211,11 @@ export const paramDef = {
 			},
 			required: ['choices'],
 		},
+		flagIds: {
+			type: 'array',
+			uniqueItems: true,
+			items: { type: 'string', format: 'misskey:id' },
+		},
 	},
 	// (re)note with text, files and poll are optional
 	if: {
@@ -218,6 +252,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		private noteEntityService: NoteEntityService,
 		private noteCreateService: NoteCreateService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			try {
@@ -238,6 +273,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					visibility: ps.visibility,
 					visibleUserIds: ps.visibleUserIds ?? [],
 					channelId: ps.channelId ?? null,
+					flagIds: ps.flagIds ?? [],
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
@@ -253,6 +289,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw new ApiError(meta.errors.containsProhibitedWords);
 					} else if (err.id === '9f466dab-c856-48cd-9e65-ff90ff750580') {
 						throw new ApiError(meta.errors.containsTooManyMentions);
+					} else if (err.id === '8c148117-4d13-4ada-8cf3-4d6286a2bf03') {
+						throw new ApiError(meta.errors.tooLong);
 					} else if (err.id === '801c046c-5bf5-4234-ad2b-e78fc20a2ac7') {
 						throw new ApiError(meta.errors.noSuchFile);
 					} else if (err.id === '53983c56-e163-45a6-942f-4ddc485d4290') {
@@ -283,6 +321,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw new ApiError(meta.errors.cannotCreateAlreadyExpiredPoll);
 					} else if (err.id === 'bfa3905b-25f5-4894-b430-da331a490e4b') {
 						throw new ApiError(meta.errors.noSuchChannel);
+					} else if (err.errorIs(NoteCreateService.MatchedProhibitedPatternsError)) {
+						throw new ApiError(meta.errors.matchedProhibitedPatterns);
+					} else if (err.errorIs(NoteCreateService.AttachFileProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.QuoteProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.ReplyProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.DirectMessageProhibitedUserError)) {
+						throw new ApiError(meta.errors.restrictedByRole);
+					} else if (err.errorIs(NoteCreateService.ProhibitedByNotePolicyError)) {
+						throw new ApiError(meta.errors.restrictedByNotePolicy);
 					}
 				}
 				throw err;

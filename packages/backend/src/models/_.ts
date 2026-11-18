@@ -23,7 +23,7 @@ import { MiBubbleGameRecord } from '@/models/BubbleGameRecord.js';
 import { MiChannel } from '@/models/Channel.js';
 import { MiChannelFavorite } from '@/models/ChannelFavorite.js';
 import { MiChannelFollowing } from '@/models/ChannelFollowing.js';
-import { MiChannelMuting } from "@/models/ChannelMuting.js";
+import { MiChannelMuting } from '@/models/ChannelMuting.js';
 import { MiChatApproval } from '@/models/ChatApproval.js';
 import { MiChatMessage } from '@/models/ChatMessage.js';
 import { MiChatRoom } from '@/models/ChatRoom.js';
@@ -48,6 +48,8 @@ import { MiModerationLog } from '@/models/ModerationLog.js';
 import { MiMuting } from '@/models/Muting.js';
 import { MiNote } from '@/models/Note.js';
 import { MiNoteDraft } from '@/models/NoteDraft.js';
+import { MiNoteFlag } from '@/models/NoteFlag.js';
+import { MiNoteFlagAssignment } from '@/models/NoteFlagAssignment.js';
 import { MiNoteFavorite } from '@/models/NoteFavorite.js';
 import { MiNoteReaction } from '@/models/NoteReaction.js';
 import { MiNoteThreadMuting } from '@/models/NoteThreadMuting.js';
@@ -130,6 +132,8 @@ export {
 	MiNote,
 	MiNoteDraft,
 	MiNoteFavorite,
+	MiNoteFlag,
+	MiNoteFlagAssignment,
 	MiNoteReaction,
 	MiNoteThreadMuting,
 	MiPage,
@@ -208,6 +212,8 @@ export type ModerationLogsRepository = Repository<MiModerationLog> & MiRepositor
 export type MutingsRepository = Repository<MiMuting> & MiRepository<MiMuting>;
 export type RenoteMutingsRepository = Repository<MiRenoteMuting> & MiRepository<MiRenoteMuting>;
 export type NotesRepository = Repository<MiNote> & MiRepository<MiNote>;
+export type NoteFlagsRepository = Repository<MiNoteFlag> & MiRepository<MiNoteFlag>;
+export type NoteFlagAssignmentsRepository = Repository<MiNoteFlagAssignment> & MiRepository<MiNoteFlagAssignment>;
 export type NoteDraftsRepository = Repository<MiNoteDraft> & MiRepository<MiNoteDraft>;
 export type NoteFavoritesRepository = Repository<MiNoteFavorite> & MiRepository<MiNoteFavorite>;
 export type NoteReactionsRepository = Repository<MiNoteReaction> & MiRepository<MiNoteReaction>;

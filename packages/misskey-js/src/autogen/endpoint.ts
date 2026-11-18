@@ -74,6 +74,16 @@ import type {
 	AdminInviteListRequest,
 	AdminInviteListResponse,
 	AdminMetaResponse,
+	AdminNoteFlagsAssignRequest,
+	AdminNoteFlagsCreateRequest,
+	AdminNoteFlagsCreateResponse,
+	AdminNoteFlagsDeleteRequest,
+	AdminNoteFlagsListResponse,
+	AdminNoteFlagsShowRequest,
+	AdminNoteFlagsShowResponse,
+	AdminNoteFlagsUnassignRequest,
+	AdminNoteFlagsUpdateRequest,
+	AdminNoteFlagsUpdateDefaultPoliciesRequest,
 	AdminPromoCreateRequest,
 	AdminQueueClearRequest,
 	AdminQueueDeliverDelayedResponse,
@@ -493,6 +503,9 @@ import type {
 	MuteListResponse,
 	MyAppsRequest,
 	MyAppsResponse,
+	NoteFlagsCreateRequest,
+	NoteFlagsDeleteRequest,
+	NoteFlagsListResponse,
 	NotesRequest,
 	NotesResponse,
 	NotesChildrenRequest,
@@ -721,6 +734,14 @@ export type Endpoints = {
 	'admin/invite/create': { req: AdminInviteCreateRequest; res: AdminInviteCreateResponse };
 	'admin/invite/list': { req: AdminInviteListRequest; res: AdminInviteListResponse };
 	'admin/meta': { req: EmptyRequest; res: AdminMetaResponse };
+	'admin/note-flags/assign': { req: AdminNoteFlagsAssignRequest; res: EmptyResponse };
+	'admin/note-flags/create': { req: AdminNoteFlagsCreateRequest; res: AdminNoteFlagsCreateResponse };
+	'admin/note-flags/delete': { req: AdminNoteFlagsDeleteRequest; res: EmptyResponse };
+	'admin/note-flags/list': { req: EmptyRequest; res: AdminNoteFlagsListResponse };
+	'admin/note-flags/show': { req: AdminNoteFlagsShowRequest; res: AdminNoteFlagsShowResponse };
+	'admin/note-flags/unassign': { req: AdminNoteFlagsUnassignRequest; res: EmptyResponse };
+	'admin/note-flags/update': { req: AdminNoteFlagsUpdateRequest; res: EmptyResponse };
+	'admin/note-flags/update-default-policies': { req: AdminNoteFlagsUpdateDefaultPoliciesRequest; res: EmptyResponse };
 	'admin/promo/create': { req: AdminPromoCreateRequest; res: EmptyResponse };
 	'admin/queue/clear': { req: AdminQueueClearRequest; res: EmptyResponse };
 	'admin/queue/deliver-delayed': { req: EmptyRequest; res: AdminQueueDeliverDelayedResponse };
@@ -995,6 +1016,9 @@ export type Endpoints = {
 	'mute/delete': { req: MuteDeleteRequest; res: EmptyResponse };
 	'mute/list': { req: MuteListRequest; res: MuteListResponse };
 	'my/apps': { req: MyAppsRequest; res: MyAppsResponse };
+	'note-flags/create': { req: NoteFlagsCreateRequest; res: EmptyResponse };
+	'note-flags/delete': { req: NoteFlagsDeleteRequest; res: EmptyResponse };
+	'note-flags/list': { req: EmptyRequest; res: NoteFlagsListResponse };
 	'notes': { req: NotesRequest; res: NotesResponse };
 	'notes/children': { req: NotesChildrenRequest; res: NotesChildrenResponse };
 	'notes/clips': { req: NotesClipsRequest; res: NotesClipsResponse };

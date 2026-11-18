@@ -30,6 +30,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</span>
 		<span v-if="note.localOnly" style="margin-left: 0.5em;" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
 		<span v-if="note.channel" style="margin-left: 0.5em;" :title="note.channel.name"><i class="ti ti-device-tv"></i></span>
+		<span v-for="flag of note.flags?.filter(v => v.asBadge).sort((l, r) => l.displayOrder - r.displayOrder)" :key="flag.id" style="margin-left: 0.5em;" :title="flag.name">
+			<img v-if="flag.iconUrl" :src="flag.iconUrl" :class="$style.badgeFlag"/>
+			<i v-else class="ti ti-flag" :style="{color: flag.color ?? undefined}"></i>
+		</span>
 	</div>
 </header>
 </template>
@@ -106,5 +110,10 @@ const mock = inject(DI.mock, false);
 	& + .badgeRole {
 		margin-left: 0.2em;
 	}
+}
+
+.badgeFlag {
+	height: 1.3em;
+	vertical-align: -20%;
 }
 </style>

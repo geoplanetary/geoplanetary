@@ -15,6 +15,7 @@ import { SystemAccountService } from '@/core/SystemAccountService.js';
 import type { Config } from '@/config.js';
 import { DI } from '@/di-symbols.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
+import * as noteflagModel from '@/models/NoteFlag.js';
 
 @Injectable()
 export class MetaEntityService {
@@ -128,6 +129,7 @@ export class MetaEntityService {
 			serverRules: instance.serverRules,
 
 			policies: { ...DEFAULT_POLICIES, ...instance.policies },
+			notePolicies: { ...noteflagModel.DEFAULT_POLICIES, ...instance.notePolicies },
 
 			sentryForFrontend: this.config.sentryForFrontend ?? null,
 			mediaProxy: this.config.mediaProxy,

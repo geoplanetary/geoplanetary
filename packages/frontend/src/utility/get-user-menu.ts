@@ -7,8 +7,8 @@ import { toUnicode } from 'punycode.js';
 import { defineAsyncComponent, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { host, url } from '@@/js/config.js';
-import type { Router } from '@/router.js';
 import type { MenuItem } from '@/types/menu.js';
+import type { Router } from '@/router.js';
 import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import * as os from '@/os.js';
@@ -231,15 +231,15 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			text: i18n.ts.searchThisUsersNotes,
 			action: () => {
 				const query = {
-						username: user.username,
-					} as { username: string, host?: string };
+					username: user.username,
+				} as { username: string, host?: string };
 
 				if (user.host !== null) {
 					query.host = user.host;
 				}
 
 				router.push('/search', {
-					query
+					query,
 				});
 			},
 		});
@@ -250,7 +250,11 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			icon: 'ti ti-pencil',
 			text: i18n.ts.editMemo,
 			action: editMemo,
-		}, {
+		});
+	}
+
+	if ($i && ($i.policies.userListAvailable || $i.isAdmin)) {
+		menuItems.push({
 			type: 'parent',
 			icon: 'ti ti-list',
 			text: i18n.ts.addToList,
@@ -283,7 +287,11 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 					};
 				});
 			},
-		}, {
+		});
+	}
+
+	if ($i) {
+		menuItems.push({
 			type: 'parent',
 			icon: 'ti ti-antenna',
 			text: i18n.ts.addToAntenna,

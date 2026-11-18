@@ -52,6 +52,7 @@ import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
 import { DI } from '@/di.js';
 import { globalEvents } from '@/events.js';
+import { $i } from '@/i';
 import type { Content } from '@/components/MkLightbox.item.vue';
 import { isPreviewable, getType } from '@/utility/lightbox.js';
 
@@ -153,24 +154,27 @@ async function describe(file: Misskey.entities.DriveFile) {
 
 function showFileMenu(file: Misskey.entities.DriveFile, ev: PointerEvent | KeyboardEvent): void {
 	if (menuShowing) return;
+	const isDriveWritable = !$i || ($i.isAdmin ?? false) || $i.policies.driveWritable;
 
 	const menuItems: MenuItem[] = [];
 
-	menuItems.push({
-		text: i18n.ts.renameFile,
-		icon: 'ti ti-forms',
-		action: () => { rename(file); },
-	}, {
-		text: file.isSensitive ? i18n.ts.unmarkAsSensitive : i18n.ts.markAsSensitive,
-		icon: file.isSensitive ? 'ti ti-eye-exclamation' : 'ti ti-eye',
-		action: () => { toggleSensitive(file); },
-	}, {
-		text: i18n.ts.describeFile,
-		icon: 'ti ti-text-caption',
-		action: () => { describe(file); },
-	});
+	if (isDriveWritable) {
+		menuItems.push({
+			text: i18n.ts.renameFile,
+			icon: 'ti ti-forms',
+			action: () => { rename(file); },
+		}, {
+			text: file.isSensitive ? i18n.ts.unmarkAsSensitive : i18n.ts.markAsSensitive,
+			icon: file.isSensitive ? 'ti ti-eye-exclamation' : 'ti ti-eye',
+			action: () => { toggleSensitive(file); },
+		}, {
+			text: i18n.ts.describeFile,
+			icon: 'ti ti-text-caption',
+			action: () => { describe(file); },
+		});
+	}
 
-	if (isPreviewable(file.type)) {
+	if (isPreviewable(file.type) && isDriveWritable) {
 		menuItems.push({
 			text: i18n.ts.preview,
 			icon: 'ti ti-photo-search',
@@ -197,18 +201,24 @@ function showFileMenu(file: Misskey.entities.DriveFile, ev: PointerEvent | Keybo
 		});
 	}
 
+	if (isDriveWritable) {
+		menuItems.push({ type: 'divider' });
+	}
+
 	menuItems.push({
-		type: 'divider',
-	}, {
 		text: i18n.ts.attachCancel,
 		icon: 'ti ti-circle-x',
 		action: () => { detachMedia(file.id); },
-	}, {
-		text: i18n.ts.deleteFile,
-		icon: 'ti ti-trash',
-		danger: true,
-		action: () => { detachAndDeleteMedia(file); },
 	});
+
+	if (isDriveWritable) {
+		menuItems.push({
+			text: i18n.ts.deleteFile,
+			icon: 'ti ti-trash',
+			danger: true,
+			action: () => { detachAndDeleteMedia(file); },
+		});
+	}
 
 	if (prefer.s.devMode) {
 		menuItems.push({ type: 'divider' }, {

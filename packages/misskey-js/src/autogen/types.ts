@@ -485,6 +485,78 @@ export type paths = {
          */
         post: operations['admin___meta'];
     };
+    '/admin/note-flags/assign': {
+        /**
+         * admin/note-flags/assign
+         * @description Assign note flag to note.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+         */
+        post: operations['admin___note-flags___assign'];
+    };
+    '/admin/note-flags/create': {
+        /**
+         * admin/note-flags/create
+         * @description Create a new note flag.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+         */
+        post: operations['admin___note-flags___create'];
+    };
+    '/admin/note-flags/delete': {
+        /**
+         * admin/note-flags/delete
+         * @description Delete a existing note flag.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+         */
+        post: operations['admin___note-flags___delete'];
+    };
+    '/admin/note-flags/list': {
+        /**
+         * admin/note-flags/list
+         * @description Get a list of note flag.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:note-flags*
+         */
+        post: operations['admin___note-flags___list'];
+    };
+    '/admin/note-flags/show': {
+        /**
+         * admin/note-flags/show
+         * @description Get a note flag.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:note-flags*
+         */
+        post: operations['admin___note-flags___show'];
+    };
+    '/admin/note-flags/unassign': {
+        /**
+         * admin/note-flags/unassign
+         * @description Unassign note flag to note.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+         */
+        post: operations['admin___note-flags___unassign'];
+    };
+    '/admin/note-flags/update': {
+        /**
+         * admin/note-flags/update
+         * @description Update a existing note flag.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+         */
+        post: operations['admin___note-flags___update'];
+    };
+    '/admin/note-flags/update-default-policies': {
+        /**
+         * admin/note-flags/update-default-policies
+         * @description Set default policies for note.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:note-flags*
+         */
+        post: operations['admin___note-flags___update-default-policies'];
+    };
     '/admin/promo/create': {
         /**
          * admin/promo/create
@@ -2992,6 +3064,33 @@ export type paths = {
          */
         post: operations['my___apps'];
     };
+    '/note-flags/create': {
+        /**
+         * note-flags/create
+         * @description Assign note flag to note.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:notes*
+         */
+        post: operations['note-flags___create'];
+    };
+    '/note-flags/delete': {
+        /**
+         * note-flags/delete
+         * @description Unassign note flag to note.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:notes*
+         */
+        post: operations['note-flags___delete'];
+    };
+    '/note-flags/list': {
+        /**
+         * note-flags/list
+         * @description Get a list of note flag.
+         *
+         *     **Credential required**: *No*
+         */
+        post: operations['note-flags___list'];
+    };
     '/notes': {
         /**
          * notes
@@ -4124,6 +4223,7 @@ export type components = {
             isFollowed?: boolean;
             hasPendingFollowRequestFromYou?: boolean;
             hasPendingFollowRequestToYou?: boolean;
+            canFollowedFromOthers?: boolean;
             isBlocking?: boolean;
             isBlocked?: boolean;
             isMuted?: boolean;
@@ -4168,6 +4268,7 @@ export type components = {
             mutedWords: string[][];
             hardMutedWords: string[][];
             mutedInstances: string[];
+            mutedFlagIds: string[];
             notificationRecieveConfig: {
                 note?: {
                     /** @enum {string} */
@@ -4394,7 +4495,7 @@ export type components = {
             unlockedAt: number;
         };
         /** @enum {string} */
-        AchievementName: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
+        AchievementName: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'mfaEnabled' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
         Ad: {
             /**
              * Format: id
@@ -4523,6 +4624,9 @@ export type components = {
             clippedCount?: number;
             hasPoll?: boolean;
             myReaction?: string | null;
+            flagIds?: string[] | null;
+            flags?: components['schemas']['NoteFlagLite'][] | null;
+            policies: components['schemas']['NotePolicies'];
         };
         NoteDraft: {
             /**
@@ -4569,6 +4673,7 @@ export type components = {
             localOnly: boolean;
             /** @enum {string|null} */
             reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
+            flagIds: string[];
             scheduledAt: number | null;
             isActuallyScheduled: boolean;
         };
@@ -5262,6 +5367,60 @@ export type components = {
             headers: Record<string, never>;
             success: boolean;
         };
+        ProhibitedNoteFormulaConstants: {
+            /** @enum {string} */
+            type: 'true' | 'false';
+        };
+        ProhibitedNoteFormulaLogics: {
+            /** @enum {string} */
+            type: 'and' | 'or';
+            values: components['schemas']['ProhibitedNoteFormulaValue'][];
+        };
+        ProhibitedNoteFormulaNot: {
+            /** @enum {string} */
+            type: 'not';
+            value: components['schemas']['ProhibitedNoteFormulaValue'];
+        };
+        ProhibitedNoteFormulaZeroArg: {
+            /** @enum {string} */
+            type: 'hasText' | 'hasMentions' | 'isReply' | 'isQuoted' | 'hasFiles' | 'hasBrowserInsafe' | 'hasPictures' | 'hasHashtags';
+        };
+        ProhibitedNoteFormulaPatternMatch: {
+            /** @enum {string} */
+            type: 'textMatchOf' | 'hasHashtagMatchOf';
+            pattern: string | string[];
+        };
+        ProhibitedNoteFormulaAssignsRole: {
+            /** @enum {string} */
+            type: 'roleAssignedTo';
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            roleId: string;
+        };
+        ProhibitedNoteFormulaCountComp: {
+            /** @enum {string} */
+            type: 'mentionCountIs' | 'mentionCountMoreThanOrEq' | 'mentionCountLessThan' | 'fileCountIs' | 'fileCountMoreThanOrEq' | 'fileCountLessThan' | 'hashtagCountIs' | 'hashtagCountMoreThanOrEq' | 'hashtagCountLessThan';
+            value: number;
+        };
+        ProhibitedNoteFormulaSizeComp: {
+            /** @enum {string} */
+            type: 'fileTotalSizeMoreThanOrEq' | 'fileTotalSizeLessThan' | 'hasFileSizeMoreThanOrEq' | 'hasFileSizeLessThan';
+            size: number;
+        };
+        ProhibitedNoteFormulaMD5HashMatch: {
+            /** @enum {string} */
+            type: 'hasFileMD5Is';
+            hash: string;
+        };
+        ProhibitedNoteFormulaBlurhashLikely: {
+            /** @enum {string} */
+            type: 'hasLikelyBlurhash';
+            hash: string;
+            diff: number;
+        };
+        ProhibitedNoteFormulaValue: components['schemas']['ProhibitedNoteFormulaConstants'] | components['schemas']['ProhibitedNoteFormulaLogics'] | components['schemas']['ProhibitedNoteFormulaNot'] | components['schemas']['ProhibitedNoteFormulaZeroArg'] | components['schemas']['ProhibitedNoteFormulaPatternMatch'] | components['schemas']['ProhibitedNoteFormulaAssignsRole'] | components['schemas']['ProhibitedNoteFormulaCountComp'] | components['schemas']['ProhibitedNoteFormulaSizeComp'] | components['schemas']['ProhibitedNoteFormulaMD5HashMatch'] | components['schemas']['ProhibitedNoteFormulaBlurhashLikely'];
         RoleCondFormulaLogics: {
             id: string;
             /** @enum {string} */
@@ -5277,12 +5436,12 @@ export type components = {
         RoleCondFormulaValueIsLocalOrRemote: {
             id: string;
             /** @enum {string} */
-            type: 'isLocal' | 'isRemote';
+            type: 'isLocal' | 'isRemote' | 'isFederated' | 'isSubscribing' | 'isPublishing' | 'isForeign';
         };
-        RoleCondFormulaValueUserSettingBooleanSchema: {
+        RoleCondFormulaValueUserSettingBoolean: {
             id: string;
             /** @enum {string} */
-            type: 'isSuspended' | 'isLocked' | 'isBot' | 'isCat' | 'isExplorable';
+            type: 'isSuspended' | 'isLocked' | 'isBot' | 'isCat' | 'isExplorable' | 'isNoCrawle' | 'isNoAI';
         };
         RoleCondFormulaValueAssignedRole: {
             id: string;
@@ -5300,13 +5459,43 @@ export type components = {
             type: 'createdLessThan' | 'createdMoreThan';
             sec: number;
         };
+        RoleCondFormulaValueLoggedIn: {
+            id: string;
+            /** @enum {string} */
+            type: 'loggedInMoreThanOrEq' | 'loggedInLessThanOrEq';
+            day: number;
+        };
         RoleCondFormulaFollowersOrFollowingOrNotes: {
             id: string;
             /** @enum {string} */
-            type: 'followersLessThanOrEq' | 'followersMoreThanOrEq' | 'followingLessThanOrEq' | 'followingMoreThanOrEq' | 'notesLessThanOrEq' | 'notesMoreThanOrEq';
+            type: 'followersLessThanOrEq' | 'followersMoreThanOrEq' | 'followingLessThanOrEq' | 'followingMoreThanOrEq' | 'notesLessThanOrEq' | 'notesMoreThanOrEq' | 'tagCountIs' | 'tagCountMoreThanOrEq' | 'tagCountLessThanOrEq' | 'fieldCountIs' | 'fieldCountMoreThanOrEq' | 'fieldCountLessThanOrEq';
             value: number;
         };
-        RoleCondFormulaValue: components['schemas']['RoleCondFormulaLogics'] | components['schemas']['RoleCondFormulaValueNot'] | components['schemas']['RoleCondFormulaValueIsLocalOrRemote'] | components['schemas']['RoleCondFormulaValueUserSettingBooleanSchema'] | components['schemas']['RoleCondFormulaValueAssignedRole'] | components['schemas']['RoleCondFormulaValueCreated'] | components['schemas']['RoleCondFormulaFollowersOrFollowingOrNotes'];
+        RoleCondFormulaValueZeroArg: {
+            id: string;
+            /** @enum {string} */
+            type: 'nameIsDefault' | 'isMfaEnabled' | 'isSecurityKeyAvailable' | 'isUsingPwlessLogin' | 'emailVerified' | 'avatarUnset' | 'bannerUnset' | 'hasTags' | 'hasFields';
+        };
+        RoleCondFormulaValuePatternMatch: {
+            id: string;
+            /** @enum {string} */
+            type: 'usernameMatchOf' | 'nameMatchOf' | 'hostMatchOf' | 'emailMatchOf' | 'descriptionMatchOf' | 'hasTagMatchOf' | 'hasFieldNameMatchOf' | 'hasFieldValueMatchOf';
+            pattern: string;
+        };
+        RoleCondFormulaValueEntropy: {
+            id: string;
+            /** @enum {string} */
+            type: 'usernameEntropyMoreThanOrEq' | 'usernameEntropyLessThanOrEq' | 'usernameEntropyMeanMoreThanOrEq' | 'usernameEntropyMeanLessThanOrEq';
+            value: number;
+        };
+        RoleCondFormulaValueBlurhashLikely: {
+            id: string;
+            /** @enum {string} */
+            type: 'avatarLikelyBlurhash' | 'bannerLikelyBlurhash';
+            hash: string;
+            diff: number;
+        };
+        RoleCondFormulaValue: components['schemas']['RoleCondFormulaLogics'] | components['schemas']['RoleCondFormulaValueNot'] | components['schemas']['RoleCondFormulaValueIsLocalOrRemote'] | components['schemas']['RoleCondFormulaValueUserSettingBoolean'] | components['schemas']['RoleCondFormulaValueAssignedRole'] | components['schemas']['RoleCondFormulaValueCreated'] | components['schemas']['RoleCondFormulaValueLoggedIn'] | components['schemas']['RoleCondFormulaFollowersOrFollowingOrNotes'] | components['schemas']['RoleCondFormulaValueZeroArg'] | components['schemas']['RoleCondFormulaValuePatternMatch'] | components['schemas']['RoleCondFormulaValueEntropy'] | components['schemas']['RoleCondFormulaValueBlurhashLikely'];
         RoleLite: {
             /**
              * Format: id
@@ -5356,7 +5545,14 @@ export type components = {
         RolePolicies: {
             gtlAvailable: boolean;
             ltlAvailable: boolean;
+            canPostNote: boolean;
+            noteLengthLimit: number;
             canPublicNote: boolean;
+            canFederateNote: boolean;
+            canAttachFiles: boolean;
+            canReply: boolean;
+            canQuote: boolean;
+            canDirectMessage: boolean;
             mentionLimit: number;
             canInvite: boolean;
             inviteLimit: number;
@@ -5369,21 +5565,27 @@ export type components = {
             canUseTranslator: boolean;
             canHideAds: boolean;
             canCreateChannel: boolean;
+            driveWritable: boolean;
             driveCapacityMb: number;
             maxFileSizeMb: number;
-            uploadableFileTypes: string[];
             alwaysMarkNsfw: boolean;
             canUpdateBioMedia: boolean;
             pinLimit: number;
             antennaLimit: number;
             wordMuteLimit: number;
             webhookLimit: number;
+            clipAvailable: boolean;
             clipLimit: number;
             noteEachClipsLimit: number;
+            userListAvailable: boolean;
             userListLimit: number;
             userEachUserListsLimit: number;
             rateLimitFactor: number;
             avatarDecorationLimit: number;
+            canFollowing: boolean;
+            canFollowedFromOthers: boolean;
+            /** @enum {string} */
+            requireSigninToViewContents: 'leave' | 'force-enable' | 'force-disable';
             canImportAntennas: boolean;
             canImportBlocking: boolean;
             canImportFollowing: boolean;
@@ -5391,9 +5593,59 @@ export type components = {
             canImportUserLists: boolean;
             /** @enum {string} */
             chatAvailability: 'available' | 'readonly' | 'unavailable';
+            uploadableFileTypes: string[];
             noteDraftLimit: number;
             scheduledNoteLimit: number;
             watermarkAvailable: boolean;
+        };
+        NoteFlagLite: {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            /** @example New Flag */
+            name: string;
+            description: string;
+            /** @example #000000 */
+            color: string | null;
+            /** @example https://example.com/ */
+            iconUrl: string | null;
+            /** @example false */
+            asBadge: boolean;
+            /** @example false */
+            canAssignByUser: boolean;
+            /** @example 0 */
+            displayOrder: number;
+        };
+        NoteFlag: components['schemas']['NoteFlagLite'] & {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @example false */
+            isPublic: boolean;
+            /** @enum {string} */
+            target: 'manual' | 'conditional';
+            condFormula: string;
+            policies: components['schemas']['NotePolicyOverrides'];
+        };
+        NotePolicyOverrideBooleanValue: {
+            useDefault: boolean;
+            priority?: number;
+            value?: boolean;
+        };
+        NotePolicyOverrides: {
+            masked: components['schemas']['NotePolicyOverrideBooleanValue'];
+            defaultMuted: components['schemas']['NotePolicyOverrideBooleanValue'];
+            enableReply: components['schemas']['NotePolicyOverrideBooleanValue'];
+            enableQuote: components['schemas']['NotePolicyOverrideBooleanValue'];
+        };
+        NotePolicies: {
+            masked?: boolean;
+            defaultMuted?: boolean;
+            enableReply?: boolean;
+            enableQuote?: boolean;
         };
         ReversiGameLite: {
             /** Format: id */
@@ -5557,6 +5809,7 @@ export type components = {
             serverRules: string[];
             themeColor: string | null;
             policies: components['schemas']['RolePolicies'];
+            notePolicies: components['schemas']['NotePolicies'];
             /**
              * @default local
              * @enum {string}
@@ -9470,8 +9723,11 @@ export interface operations {
                         sensitiveWords: string[];
                         prohibitedWords: string[];
                         prohibitedWordsForNameOfUser: string[];
+                        prohibitedNotePattern: components['schemas']['ProhibitedNoteFormulaValue'] | null;
                         bannedEmailDomains?: string[];
+                        bannedEmails?: string[];
                         preservedUsernames: string[];
+                        usernameEntropyTable: Record<string, never> | null;
                         hcaptchaSecretKey: string | null;
                         mcaptchaSecretKey: string | null;
                         recaptchaSecretKey: string | null;
@@ -9521,6 +9777,7 @@ export interface operations {
                         enableIdenticonGeneration: boolean;
                         manifestJsonOverride: string;
                         policies: Record<string, never>;
+                        notePolicies: components['schemas']['NotePolicies'];
                         enableFanoutTimeline: boolean;
                         enableFanoutTimelineDbFallback: boolean;
                         perLocalUserUserTimelineCacheMax: number;
@@ -9582,6 +9839,536 @@ export interface operations {
                         remoteNotesCleaningMaxProcessingDurationInMinutes: number;
                         showRoleBadgesOfRemoteUsers: boolean;
                     };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___note-flags___assign': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    flagId: string;
+                    /** Format: misskey:id */
+                    noteId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___note-flags___create': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    name: string;
+                    description: string;
+                    color: string | null;
+                    iconUrl: string | null;
+                    isPublic: boolean;
+                    asBadge: boolean;
+                    canAssignByUser: boolean;
+                    displayOrder: number;
+                    /** @enum {string} */
+                    target: 'manual' | 'conditional';
+                    condFormula: string;
+                    policies: Record<string, never>;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['NoteFlag'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___note-flags___delete': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    flagId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___note-flags___list': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['NoteFlag'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___note-flags___show': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    flagId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['NoteFlag'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___note-flags___unassign': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    flagId: string;
+                    /** Format: misskey:id */
+                    noteId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___note-flags___update': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    flagId: string;
+                    name?: string;
+                    description?: string;
+                    color?: string | null;
+                    iconUrl?: string | null;
+                    isPublic?: boolean;
+                    asBadge?: boolean;
+                    canAssignByUser?: boolean;
+                    displayOrder?: number;
+                    /** @enum {string} */
+                    target?: 'manual' | 'conditional';
+                    condFormula?: string;
+                    policies?: Record<string, never>;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___note-flags___update-default-policies': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    policies: Record<string, never>;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
                 };
             };
             /** @description Client error */
@@ -11853,6 +12640,7 @@ export interface operations {
                         receiveAnnouncementEmail: boolean;
                         mutedWords: (string | string[])[];
                         mutedInstances: string[];
+                        mutedFlagIds: string[];
                         notificationRecieveConfig: {
                             note?: {
                                 /** @enum {string} */
@@ -12015,6 +12803,7 @@ export interface operations {
                         lastActiveDate: string | null;
                         moderationNote: string;
                         signins: components['schemas']['Signin'][];
+                        usernameEntropy: number | null;
                         policies: components['schemas']['RolePolicies'];
                         roles: components['schemas']['Role'][];
                         roleAssigns: {
@@ -12964,6 +13753,7 @@ export interface operations {
                     sensitiveWords?: string[] | null;
                     prohibitedWords?: string[] | null;
                     prohibitedWordsForNameOfUser?: string[] | null;
+                    prohibitedNotePattern?: Record<string, never> | null;
                     themeColor?: string | null;
                     mascotImageUrl?: string | null;
                     bannerUrl?: string | null;
@@ -13062,7 +13852,9 @@ export interface operations {
                     enableIdenticonGeneration?: boolean;
                     serverRules?: string[];
                     bannedEmailDomains?: string[];
+                    bannedEmails?: string[];
                     preservedUsernames?: string[];
+                    usernameEntropyTable?: Record<string, never> | null;
                     manifestJsonOverride?: string;
                     enableFanoutTimeline?: boolean;
                     enableFanoutTimelineDbFallback?: boolean;
@@ -25318,7 +26110,7 @@ export interface operations {
             content: {
                 'application/json': {
                     /** @enum {string} */
-                    name: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
+                    name: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'mfaEnabled' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
                 };
             };
         };
@@ -27919,6 +28711,7 @@ export interface operations {
                     mutedWords?: (string[] | string)[];
                     hardMutedWords?: (string[] | string)[];
                     mutedInstances?: string[];
+                    mutedFlagIds?: string[];
                     notificationRecieveConfig?: {
                         note?: {
                             /** @enum {string} */
@@ -29303,6 +30096,212 @@ export interface operations {
             };
         };
     };
+    'note-flags___create': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    flagId: string;
+                    /** Format: misskey:id */
+                    noteId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'note-flags___delete': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    flagId: string;
+                    /** Format: misskey:id */
+                    noteId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'note-flags___list': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['NoteFlagLite'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     notes: {
         requestBody: {
             content: {
@@ -29630,6 +30629,7 @@ export interface operations {
                         expiresAt?: number | null;
                         expiredAfter?: number | null;
                     } | null;
+                    flagIds?: string[];
                 };
             };
         };
@@ -29864,6 +30864,7 @@ export interface operations {
                         expiresAt?: number | null;
                         expiredAfter?: number | null;
                     } | null;
+                    flagIds?: string[];
                     scheduledAt?: number | null;
                     /** @default false */
                     isActuallyScheduled?: boolean;
@@ -30102,6 +31103,7 @@ export interface operations {
                         expiresAt?: number | null;
                         expiredAfter?: number | null;
                     } | null;
+                    flagIds?: string[];
                     scheduledAt?: number | null;
                     isActuallyScheduled?: boolean;
                 };

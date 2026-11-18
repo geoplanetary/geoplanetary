@@ -417,6 +417,10 @@ export const packedUserDetailedNotMeOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: true,
 		},
+		canFollowedFromOthers: {
+			type: 'boolean',
+			nullable: false, optional: true,
+		},
 		isBlocking: {
 			type: 'boolean',
 			nullable: false, optional: true,
@@ -598,6 +602,14 @@ export const packedMeDetailedOnlySchema = {
 			},
 		},
 		mutedInstances: {
+			type: 'array',
+			nullable: false, optional: false,
+			items: {
+				type: 'string',
+				nullable: false, optional: false,
+			},
+		},
+		mutedFlagIds: {
 			type: 'array',
 			nullable: false, optional: false,
 			items: {

@@ -13,6 +13,7 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { prefer } from '@/preferences.js';
 import { globalEvents } from '@/events.js';
+import { $i } from '@/i.js';
 
 function rename(file: Misskey.entities.DriveFile) {
 	os.inputText({
@@ -100,6 +101,8 @@ async function deleteFile(file: Misskey.entities.DriveFile) {
 /** 自分のドライブファイルを操作する際のメニュー */
 export function getDriveFileMenu(file: Misskey.entities.DriveFile, folder?: Misskey.entities.DriveFolder | null): MenuItem[] {
 	const _isImage = file.type.startsWith('image/');
+	const isDriveWritable = $i ? $i.policies.driveWritable || $i.isAdmin : true;
+	const canAttachFiles = $i?.policies.canAttachFiles ?? true;
 
 	const menuItems: MenuItem[] = [];
 
@@ -108,32 +111,42 @@ export function getDriveFileMenu(file: Misskey.entities.DriveFile, folder?: Miss
 		to: `/my/drive/file/${file.id}`,
 		text: i18n.ts._fileViewer.title,
 		icon: 'ti ti-info-circle',
-	}, { type: 'divider' }, {
-		text: i18n.ts.rename,
-		icon: 'ti ti-forms',
-		action: () => rename(file),
-	}, {
-		text: i18n.ts.move,
-		icon: 'ti ti-folder-symlink',
-		action: () => move(file),
-	}, {
-		text: file.isSensitive ? i18n.ts.unmarkAsSensitive : i18n.ts.markAsSensitive,
-		icon: file.isSensitive ? 'ti ti-eye' : 'ti ti-eye-exclamation',
-		action: () => toggleSensitive(file),
-	}, {
-		text: i18n.ts.describeFile,
-		icon: 'ti ti-text-caption',
-		action: () => describe(file),
 	});
 
-	menuItems.push({ type: 'divider' }, {
-		text: i18n.ts.createNoteFromTheFile,
-		icon: 'ti ti-pencil',
-		action: () => os.post({
-			initialFiles: [file],
-			instant: true,
+	if (isDriveWritable) {
+		menuItems.push({
+			text: i18n.ts.rename,
+			icon: 'ti ti-forms',
+			action: () => rename(file),
+		}, {
+			text: i18n.ts.move,
+			icon: 'ti ti-folder-symlink',
+			action: () => move(file),
+		}, {
+			text: file.isSensitive ? i18n.ts.unmarkAsSensitive : i18n.ts.markAsSensitive,
+			icon: file.isSensitive ? 'ti ti-eye' : 'ti ti-eye-exclamation',
+			action: () => toggleSensitive(file),
+		}, {
+			text: i18n.ts.describeFile,
+			icon: 'ti ti-text-caption',
+			action: () => describe(file),
+		});
+	}
+
+	menuItems.push({ type: 'divider' });
+
+	if (canAttachFiles) {
+		menuItems.push({
+			text: i18n.ts.createNoteFromTheFile,
+			icon: 'ti ti-pencil',
+			action: () => os.post({
+				initialFiles: [file],
+				instant: true,
 		}),
-	}, {
+		});
+	}
+
+	menuItems.push({
 		text: i18n.ts.copyUrl,
 		icon: 'ti ti-link',
 		action: () => copyUrl(file),
@@ -144,12 +157,16 @@ export function getDriveFileMenu(file: Misskey.entities.DriveFile, folder?: Miss
 		text: i18n.ts.download,
 		icon: 'ti ti-download',
 		download: file.name,
-	}, { type: 'divider' }, {
-		text: i18n.ts.delete,
-		icon: 'ti ti-trash',
-		danger: true,
-		action: () => deleteFile(file),
 	});
+
+	if (isDriveWritable) {
+		menuItems.push({ type: 'divider' }, {
+			text: i18n.ts.delete,
+			icon: 'ti ti-trash',
+			danger: true,
+			action: () => deleteFile(file),
+		});
+	}
 
 	if (prefer.s.devMode) {
 		menuItems.push({ type: 'divider' }, {

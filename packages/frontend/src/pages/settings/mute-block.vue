@@ -62,6 +62,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</SearchMarker>
 
 			<SearchMarker
+				:label="i18n.ts._noteFlag.flagMute"
+				:keywords="['note', 'flag', 'note-flag', 'mute', 'hide']"
+			>
+				<MkFolder>
+					<template #icon><i class="ti ti-flag-off"></i></template>
+					<template #label>{{ i18n.ts._noteFlag.flagMute }}</template>
+					<MkNoteFlagPreview v-for="flag in flagIdMuteRef" :key="flag[0].id" :flag="flag[0]" :forModeration="false">
+						<MkSwitch v-model="flag[1].value">{{ i18n.ts.mute }}</MkSwitch>
+					</MkNoteFlagPreview>
+				</MkFolder>
+			</SearchMarker>
+
+			<SearchMarker
 				:label="i18n.ts.instanceMute"
 				:keywords="['note', 'server', 'instance', 'host', 'federation', 'mute', 'hide']"
 			>
@@ -192,6 +205,8 @@ import { prefer } from '@/preferences.js';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 import { Paginator } from '@/utility/paginator.js';
 import { suggestReload } from '@/utility/reload-suggest.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import MkNoteFlagPreview from '@/components/MkNoteFlagPreview.vue';
 
 const $i = ensureSignin();
 
@@ -212,6 +227,13 @@ const expandedMuteItems = ref<string[]>([]);
 const expandedBlockItems = ref<string[]>([]);
 
 const showSoftWordMutedWord = prefer.model('showSoftWordMutedWord');
+
+const initMutedFlagIds = new Set($i.mutedFlagIds);
+const flagIdMuteRef = (await misskeyApi('note-flags/list', {})).map((f) => [f, ref<boolean>(initMutedFlagIds.has(f.id))] as const);
+const mutedFlagIds = computed<Misskey.entities.NoteFlagLite['id'][]>(() => flagIdMuteRef.filter(f => f[1].value).map(f => f[0].id));
+watch(mutedFlagIds, async (v) => {
+	await os.apiWithDialog('i/update', { mutedFlagIds: v });
+}, { deep: true });
 
 watch([
 	showSoftWordMutedWord,

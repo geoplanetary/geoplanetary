@@ -186,7 +186,7 @@ export class MiUserProfile {
 	public noCrawle: boolean;
 
 	@Column('boolean', {
-		default: true,
+		default: false,
 	})
 	public preventAiLearning: boolean;
 
@@ -248,6 +248,12 @@ export class MiUserProfile {
 		comment: 'List of instances muted by the user.',
 	})
 	public mutedInstances: string[];
+
+	@Column('jsonb', {
+		default: [],
+		comment: 'List of note flags muted by the user.',
+	})
+	public mutedFlagIds: string[];
 
 	@Column('jsonb', {
 		default: {},
@@ -378,6 +384,7 @@ export const ACHIEVEMENT_TYPES = [
 	'cookieClicked',
 	'brainDiver',
 	'smashTestNotificationButton',
+	'mfaEnabled',
 	'tutorialCompleted',
 	'bubbleGameExplodingHead',
 	'bubbleGameDoubleExplodingHead',

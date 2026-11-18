@@ -6,6 +6,7 @@ packages:
   - packages/frontend-embed
   - packages/i18n
   - packages/icons-subsetter
+  - packages/lcf-expression
   - packages/sw
   - packages/misskey-js
   - packages/misskey-js/generator

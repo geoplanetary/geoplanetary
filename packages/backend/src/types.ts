@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { MiNote } from './models/Note.js';
+import { MiNoteFlag } from './models/NoteFlag.js';
+
 /**
  * note - 通知オンにしているユーザーが投稿した
  * follow - フォローされた
@@ -92,6 +95,11 @@ export const moderationLogTypes = [
 	'createRole',
 	'updateRole',
 	'deleteRole',
+	'assignNoteFlag',
+	'unassignNoteFlag',
+	'createNoteFlag',
+	'updateNoteFlag',
+	'deleteNoteFlag',
 	'clearQueue',
 	'promoteQueue',
 	'pauseQueue',
@@ -199,6 +207,35 @@ export type ModerationLogPayloads = {
 	deleteRole: {
 		roleId: string;
 		role: any;
+	};
+	assignNoteFlag: {
+		noteId: string;
+		noteUserId: string;
+		noteUserHost: string | null;
+		note: MiNote;
+		flagId: string;
+		flagName: string;
+	};
+	unassignNoteFlag: {
+		noteId: string;
+		noteUserId: string;
+		noteUserHost: string | null;
+		note: MiNote;
+		flagId: string;
+		flagName: string;
+	};
+	createNoteFlag: {
+		flagId: string;
+		flag: MiNoteFlag;
+	};
+	updateNoteFlag: {
+		flagId: string;
+		before: MiNoteFlag;
+		after: MiNoteFlag;
+	};
+	deleteNoteFlag: {
+		flagId: string;
+		flag: MiNoteFlag;
 	};
 	clearQueue: Record<string, never>;
 	promoteQueue: Record<string, never>;

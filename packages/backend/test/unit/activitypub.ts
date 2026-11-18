@@ -112,6 +112,7 @@ describe('ActivityPub', () => {
 		blockedHosts: [] as string[],
 		sensitiveWords: [] as string[],
 		prohibitedWords: [] as string[],
+		prohibitedNotePattern: { type: undefined },
 	} as MiMeta;
 	const meta = { ...metaInitial };
 
