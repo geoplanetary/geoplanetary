@@ -275,14 +275,14 @@ export class NoteModerationService implements OnApplicationShutdown {
 					this.driveFilesRepository.findBy({ id: In(note.fileIds) }),
 					this.cacheService.findUserById(note.userId),
 					this.roleService.getUserRoles(note.userId),
-					Promise.all(note.mentions.map(i => this.cacheService.findUserById(i))),
+					Promise.all(note.mentions.map(i => this.cacheService.findUserById(i).catch(() => undefined))),
 					(async () => note.hasPoll ? this.pollsRepository.findOneByOrFail({ noteId: note.id }) : null)(),
 					flags.filter(f => assigned.has(f.id)),
 				]);
 				const compiler = new LCFExpression({ predicateDefs: NoteModerationService.lcfPredicates, throwOnTypeError: false });
 				const matched = new Set(conditionalFlags.filter(flag => {
 					try {
-						return this.evalNoteExpr({ ...note, user: { ...user, roles }, reply, renote, channel, mentions, files, poll, flags: assignedFlags }, [compiler.parse(flag.condFormula)]);
+						return this.evalNoteExpr({ ...note, user: { ...user, roles }, reply, renote, channel, mentions: mentions.filter(i => i !== undefined), files, poll, flags: assignedFlags }, [compiler.parse(flag.condFormula)]);
 					} catch (_) { return false; }
 				}).map(flag => flag.id));
 				return { manual: assigned, conditional: matched };
